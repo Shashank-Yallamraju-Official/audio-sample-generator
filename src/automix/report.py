@@ -2,6 +2,7 @@
 
 import json
 
+from automix.eq import cut_db
 from automix.pipeline import MixResult, StemResult
 from automix.presets import PRESETS, Genre
 
@@ -13,7 +14,7 @@ def _eq_lines(stem: StemResult) -> list[str]:
     if stem.highpass_hz is not None:
         lines.append(f"- Channel EQ: High Pass {stem.highpass_hz:.0f} Hz, 12 dB/Oct")
     lines.extend(
-        f"- Channel EQ: bell {c.freq_hz:.0f} Hz, -{c.excess_db:.1f} dB, Q 6.0" for c in stem.cuts
+        f"- Channel EQ: bell {c.freq_hz:.0f} Hz, -{cut_db(c):.1f} dB, Q 6.0" for c in stem.cuts
     )
     return lines or ["- Channel EQ: none"]
 
@@ -59,6 +60,7 @@ def to_markdown(result: MixResult, genre: Genre) -> str:
     for name, stem in result.stems.items():
         out += ["", f"## {name}", "", f"Role: {stem.role.value} · Trim: {stem.gain_db:+.1f} dB"]
         out += ["", *_eq_lines(stem), *_comp_lines(stem), *_duck_lines(stem)]
+        out.append(f"- Fader: {stem.fader_db:+.1f} dB (already applied to the processed stem)")
     return "\n".join(out) + "\n"
 
 
@@ -69,7 +71,8 @@ def to_json(result: MixResult, genre: Genre) -> str:
             "role": s.role.value,
             "gain_db": s.gain_db,
             "highpass_hz": s.highpass_hz,
-            "cuts": [{"freq_hz": c.freq_hz, "cut_db": c.excess_db} for c in s.cuts],
+            "cuts": [{"freq_hz": c.freq_hz, "cut_db": cut_db(c)} for c in s.cuts],
+            "fader_db": s.fader_db,
             "compressor": {
                 "ratio": s.comp_settings.ratio,
                 "attack_ms": s.comp_settings.attack_ms,

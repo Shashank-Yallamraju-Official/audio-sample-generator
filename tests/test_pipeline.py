@@ -123,3 +123,61 @@ def test_estimate_bpm_folds_half_time_into_range() -> None:
 def test_silent_stems_produce_a_silent_mix() -> None:
     result = mix_stems({"Pad.wav": np.zeros((2, SR), dtype=np.float32)}, SR, Genre.POP)
     assert peak_dbfs(result.rough_mix) == -np.inf
+
+
+def _grid(bpm: float, steps: list[int], bars: int = 8) -> npt.NDArray[np.int64]:
+    sixteenth = 60 / bpm / 4 * SR
+    return np.array(
+        [int((bar * 16 + s) * sixteenth) for bar in range(bars) for s in steps], dtype=np.int64
+    )
+
+
+def test_estimate_bpm_handles_a_syncopated_hiphop_groove() -> None:
+    # Regression: kick on 1, the "a" of 2 and the "and" of 3 read as 120 BPM via median gap.
+    kick, snare, hats = _grid(90, [0, 7, 10]), _grid(90, [4, 12]), _grid(90, list(range(0, 16, 2)))
+    onsets = np.sort(np.concatenate([kick, snare, hats]))
+    assert estimate_bpm(onsets, SR, prior_bpm=90) == pytest.approx(90, rel=0.01)
+
+
+def test_estimate_bpm_handles_four_on_the_floor_with_offbeat_hats() -> None:
+    onsets = np.sort(np.concatenate([_grid(124, [0, 4, 8, 12]), _grid(124, [2, 6, 10, 14])]))
+    assert estimate_bpm(onsets, SR, prior_bpm=124) == pytest.approx(124, rel=0.01)
+
+
+def test_mix_detects_hiphop_tempo_from_all_drum_stems() -> None:
+    bpm = 90
+    sixteenth = 60 / bpm / 4
+
+    def hits(steps: list[int], freq: float, decay: float) -> npt.NDArray[np.float32]:
+        out = np.zeros((2, int(SR * 8 * 16 * sixteenth)), dtype=np.float32)
+        t = np.arange(int(0.08 * SR)) / SR
+        hit = (0.8 * np.sin(2 * np.pi * freq * t) * np.exp(-t * decay)).astype(np.float32)
+        for onset in _grid(bpm, steps):
+            end = min(onset + len(hit), out.shape[1])
+            out[:, onset:end] += hit[: end - onset]
+        return out
+
+    groove = {
+        "Kick.wav": hits([0, 7, 10], 55, 35),
+        "Snare.wav": hits([4, 12], 200, 40),
+        "HiHat.wav": hits(list(range(0, 16, 2)), 7000, 120),
+    }
+    assert mix_stems(groove, SR, Genre.HIPHOP).bpm == pytest.approx(90, rel=0.02)
+
+
+def test_rough_balance_sets_hats_well_below_kick_and_bass() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    kick = rms_dbfs(result.stems["Kick.wav"].audio)
+    bass = rms_dbfs(result.stems["Bass.wav"].audio)
+    pad = rms_dbfs(result.stems["Pad.wav"].audio)
+    assert bass > pad + 3
+    assert kick > pad + 3
+
+
+def test_every_stem_reports_its_fader_level() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    assert all(np.isfinite(s.fader_db) for s in result.stems.values())
+
+
+def test_estimate_bpm_gives_up_on_simultaneous_onsets() -> None:
+    assert estimate_bpm(np.array([1000, 1000], dtype=np.int64), SR) is None

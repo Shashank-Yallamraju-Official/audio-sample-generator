@@ -85,8 +85,8 @@ _SMOOTHING_OCTAVES = 2 / 3
 def find_resonances(
     audio: Audio,
     sr: int,
-    threshold_db: float = 6.0,
-    max_cuts: int = 5,
+    threshold_db: float = 8.0,
+    max_cuts: int = 3,
     freq_range_hz: tuple[float, float] = (60.0, 12_000.0),
 ) -> list[Resonance]:
     """Find peaks in the long-term spectrum that stand out from a smoothed version of it.
@@ -112,6 +112,11 @@ def find_resonances(
     return [Resonance(float(grid[peaks[i]]), float(excess[peaks[i]])) for i in strongest]
 
 
+def cut_db(resonance: Resonance, max_cut_db: float = 6.0) -> float:
+    """How deep to cut a resonance: half its excess, so it is tamed rather than flattened."""
+    return min(resonance.excess_db / 2, max_cut_db)
+
+
 def apply_cuts(
     audio: Audio,
     sr: int,
@@ -119,12 +124,12 @@ def apply_cuts(
     q: float = 6.0,
     max_cut_db: float = 6.0,
 ) -> Audio:
-    """Notch each resonance with a narrow bell, cutting its excess but never more than the cap."""
+    """Notch each resonance with a narrow bell, cutting half its excess up to the cap."""
     if not resonances:
         return audio.copy()
     board = Pedalboard(
         [
-            PeakFilter(cutoff_frequency_hz=r.freq_hz, gain_db=-min(r.excess_db, max_cut_db), q=q)
+            PeakFilter(cutoff_frequency_hz=r.freq_hz, gain_db=-cut_db(r, max_cut_db), q=q)
             for r in resonances
         ]
     )

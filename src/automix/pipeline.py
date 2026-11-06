@@ -7,12 +7,14 @@ from the kick. The stems are summed into a rough mix with mix-bus headroom.
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
+from scipy import ndimage, signal
 
 from automix._types import Audio, SampleIndices
 from automix.compression import CompResult, CompSettings, compress
 from automix.eq import HIGHPASS_HZ, Resonance, Role, apply_cuts, find_resonances, highpass
 from automix.eq import role_from_filename as _role
-from automix.gain import gain_stage, peak_dbfs
+from automix.gain import gain_stage, peak_dbfs, rms_dbfs
 from automix.presets import Genre, comp_settings, duck_settings
 from automix.sidechain import DuckSettings, apply_ducking, detect_onsets, duck_curve
 
@@ -22,6 +24,20 @@ TEMPO_RANGE_BPM = (70.0, 180.0)
 # automatic notching.
 _NO_RESONANCE_CUTS = frozenset({Role.BASS, Role.SYNTH})
 _MAX_CUT_DB = 6.0
+# Starting fader balance: each processed stem's RMS level, so the rough mix is already roughly
+# balanced (a level, not a loudness standard; tune by ear in Logic).
+FADER_RMS_DBFS: dict[Role, float] = {
+    Role.KICK: -20.0,
+    Role.BASS: -20.0,
+    Role.SNARE: -22.0,
+    Role.HATS: -30.0,
+    Role.SYNTH: -25.0,
+    Role.VOCAL: -19.0,
+    Role.RETURN: -30.0,
+    Role.OTHER: -26.0,
+}
+_DRUM_ROLES = frozenset({Role.KICK, Role.SNARE, Role.HATS})
+_TEMPO_PRIOR_BPM = {Genre.DANCE: 124.0, Genre.HIPHOP: 90.0, Genre.POP: 110.0}
 
 
 @dataclass(frozen=True)
@@ -47,6 +63,7 @@ class StemResult:
     comp_settings: CompSettings
     comp: CompResult
     duck: DuckSettings | None
+    fader_db: float
 
 
 @dataclass(frozen=True)
@@ -60,17 +77,36 @@ class MixResult:
     rough_mix: Audio
 
 
-def estimate_bpm(onsets: SampleIndices, sr: int) -> float | None:
-    """Estimate tempo from kick onsets via the median gap, folded into 70-180 BPM."""
-    if len(onsets) < 2:
+_ONSET_FPS = 100  # onset-train frame rate for tempo analysis
+_PRIOR_OCTAVES = 0.5  # width of the tempo prior, in octaves (one standard deviation)
+
+
+def estimate_bpm(onsets: SampleIndices, sr: int, prior_bpm: float = 110.0) -> float | None:
+    """Estimate tempo from drum onsets by autocorrelating an onset train.
+
+    Each candidate beat period is scored on the autocorrelation at that period plus half its
+    double and half its half (so a groove that only repeats every two beats still counts),
+    weighted by a log-normal prior around ``prior_bpm`` to settle half/double-time ties.
+    """
+    frames = np.round(np.asarray(onsets) * _ONSET_FPS / sr).astype(np.int64)
+    if len(np.unique(frames)) < 2:
         return None
-    bpm = 60 * sr / float(np.median(np.diff(onsets)))
+    train = np.zeros(int(frames.max()) + 1)
+    np.add.at(train, frames, 1.0)
+    train = ndimage.gaussian_filter1d(train, sigma=1.0)
+    train -= train.mean()
+    ac = signal.correlate(train, train, mode="full")[len(train) - 1 :]
+    ac = np.clip(ac / ac[0], 0.0, None)
+
+    def at(lag: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        return np.asarray(np.interp(lag, np.arange(len(ac)), ac, right=0.0), dtype=np.float64)
+
     low, high = TEMPO_RANGE_BPM
-    while bpm > high:
-        bpm /= 2
-    while bpm < low:
-        bpm *= 2
-    return bpm
+    candidates = np.arange(low, high + 0.05, 0.1)
+    lag = 60 * _ONSET_FPS / candidates
+    prior = np.exp(-0.5 * (np.log2(candidates / prior_bpm) / _PRIOR_OCTAVES) ** 2)
+    score = (at(lag) + 0.5 * at(2 * lag) + 0.5 * at(lag / 2)) * prior
+    return float(candidates[int(np.argmax(score))])
 
 
 def ghost_kick(n_samples: int, onsets: SampleIndices, sr: int) -> Audio:
@@ -107,7 +143,15 @@ def mix_stems(
         else np.array([], dtype=np.int64)
     )
     if bpm is None:
-        bpm = estimate_bpm(onsets, sr)
+        drum_names = [n for n, r in roles.items() if r in _DRUM_ROLES]
+        drum_onsets = (
+            np.concatenate([detect_onsets(padded[n], sr) for n in drum_names])
+            if drum_names
+            else np.array([], dtype=np.int64)
+        )
+        bpm = (
+            estimate_bpm(np.sort(drum_onsets), sr, _TEMPO_PRIOR_BPM[genre]) if len(onsets) else None
+        )
 
     ctx = _Context(sr, genre, onsets, bpm)
     results = {name: _process(audio, roles[name], ctx) for name, audio in padded.items()}
@@ -130,8 +174,9 @@ def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:
     cutoff = HIGHPASS_HZ[role]
     out = highpass(staged.audio, sr, cutoff)
 
-    found = [] if role in _NO_RESONANCE_CUTS else find_resonances(out, sr)
-    cuts = tuple(Resonance(r.freq_hz, min(r.excess_db, _MAX_CUT_DB)) for r in found)
+    cuts: tuple[Resonance, ...] = (
+        () if role in _NO_RESONANCE_CUTS else tuple(find_resonances(out, sr))
+    )
     out = apply_cuts(out, sr, list(cuts), max_cut_db=_MAX_CUT_DB)
 
     settings = comp_settings(ctx.genre, role)
@@ -141,6 +186,10 @@ def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:
     duck = duck_settings(ctx.genre, role, bpm) if bpm is not None and len(onsets) else None
     if duck is not None:
         out = apply_ducking(out, duck_curve(out.shape[1], onsets, sr, duck))
+
+    level = rms_dbfs(out)
+    fader_db = FADER_RMS_DBFS[role] - level if np.isfinite(level) else 0.0
+    out = (out * np.float32(10 ** (fader_db / 20))).astype(np.float32)
 
     return StemResult(
         role=role,
@@ -152,4 +201,5 @@ def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:
         comp_settings=settings,
         comp=comp,
         duck=duck,
+        fader_db=fader_db,
     )
