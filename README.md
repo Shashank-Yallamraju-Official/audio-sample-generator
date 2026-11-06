@@ -50,7 +50,9 @@ Processed stems include a starting fader balance (kick and bass loudest, hats lo
 the rough mix is already roughly balanced; the settings sheet lists each fader move.
 
 Stem roles come from filenames; anything unrecognised is treated as `other` and gets
-gentle defaults.
+gentle defaults. Fader levels are measured while a stem is playing, so a part that only
+comes in now and then is not turned up to make up for its silence. Logic's
+`Smart Tempo Multitrack Set` downmix, if it is in the stems folder, is skipped.
 
 ## Development
 

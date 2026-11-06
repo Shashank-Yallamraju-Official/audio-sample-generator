@@ -15,6 +15,9 @@ from automix.presets import PRESETS, parse_genre
 from automix.report import to_json, to_markdown
 
 AUDIO_SUFFIXES = frozenset({".wav", ".aif", ".aiff", ".flac"})
+# Logic leaves a downmix of the whole project beside the exported stems when Smart Tempo is
+# on; mixing it in would double every part.
+_SMART_TEMPO_PREFIX = "smart tempo multitrack set"
 
 
 class InputError(Exception):
@@ -22,7 +25,11 @@ class InputError(Exception):
 
 
 def _load(folder: Path) -> tuple[dict[str, Audio], int]:
-    files = sorted(p for p in folder.iterdir() if p.suffix.lower() in AUDIO_SUFFIXES)
+    audio_files = sorted(p for p in folder.iterdir() if p.suffix.lower() in AUDIO_SUFFIXES)
+    files = [p for p in audio_files if not p.name.lower().startswith(_SMART_TEMPO_PREFIX)]
+    for path in audio_files:
+        if path not in files:
+            print(f"automix: skipped {path.name} (Logic's Smart Tempo downmix)", file=sys.stderr)
     if not files:
         msg = f"no audio files in {folder}"
         raise InputError(msg)
