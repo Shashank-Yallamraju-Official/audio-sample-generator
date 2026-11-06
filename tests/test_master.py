@@ -3,8 +3,8 @@ import numpy.typing as npt
 import pytest
 from scipy import signal
 
-from automix.gain import peak_dbfs
-from automix.master import MAX_LIMITING_DB, master, measure
+from automix.gain import peak_dbfs, rms_dbfs
+from automix.master import MAX_LIMITING_DB, limit, master, measure
 
 from .conftest import SR, sine
 
@@ -97,3 +97,68 @@ def test_reference_sets_the_loudness_target() -> None:
     reference = song(seed=1) * np.float32(0.5)
     result = master(song(seed=2), SR, target_lufs=-9.0, reference=reference)
     assert result.target_lufs == pytest.approx(measure(reference, SR).lufs, abs=0.01)
+
+
+def test_limit_leaves_audio_under_the_ceiling_untouched() -> None:
+    quiet = sine(1000, 1.0, 0.1)
+    out, reduction_db = limit(quiet, SR, ceiling_dbtp=-1.0)
+    np.testing.assert_allclose(out, quiet, atol=1e-6)
+    assert reduction_db == 0.0
+
+
+def test_limit_holds_the_true_peak_ceiling() -> None:
+    out, _ = limit(song() * np.float32(4.0), SR, ceiling_dbtp=-1.0)
+    assert measure(out, SR).true_peak_dbtp <= -1.0
+
+
+def test_limit_turns_a_loud_tone_down_without_distorting_it() -> None:
+    loud = sine(1000, 1.0, 2.0)  # 6 dB over full scale
+    out, reduction_db = limit(loud, SR, ceiling_dbtp=-1.0)
+    middle = out[0, SR // 4 : 3 * SR // 4]
+    spectrum = np.abs(np.fft.rfft(middle * np.hanning(len(middle))))
+    freqs = np.fft.rfftfreq(len(middle), 1 / SR)
+    harmonics_db = 20 * np.log10(spectrum[freqs > 1500].max() / spectrum.max())
+    assert harmonics_db < -60
+    assert reduction_db == pytest.approx(7.0, abs=0.2)
+
+
+def test_limit_moves_both_channels_together() -> None:
+    loud = sine(1000, 1.0, 2.0)
+    loud[1] *= 0.25  # right is 12 dB down, and on its own would need no limiting
+    out, _ = limit(loud, SR, ceiling_dbtp=-1.0)
+    assert rms_dbfs(out[:1]) - rms_dbfs(out[1:]) == pytest.approx(12.04, abs=0.1)
+
+
+def test_limit_does_not_mutate_input() -> None:
+    loud = sine(1000, 0.5, 2.0)
+    before = loud.copy()
+    limit(loud, SR, ceiling_dbtp=-1.0)
+    np.testing.assert_array_equal(loud, before)
+
+
+def test_master_reports_the_gain_it_applied() -> None:
+    result = master(song(), SR, target_lufs=-20.0)  # a cut, so the limiter has nothing to do
+    assert result.gain_db == pytest.approx(result.after.lufs - result.before.lufs, abs=0.1)
+    assert result.limiting_db == 0.0
+
+
+def test_master_lands_on_target_when_the_limiter_is_working() -> None:
+    result = master(song(), SR, target_lufs=-14.0)
+    assert result.limiting_db > 1.0
+    assert result.after.lufs == pytest.approx(-14.0, abs=0.15)
+
+
+def test_master_says_so_whenever_it_lands_under_target() -> None:
+    result = master(song(), SR, target_lufs=-9.0)
+    assert result.after.lufs < -9.5
+    assert result.capped
+
+
+def test_measure_reads_audio_too_short_for_loudness_as_unmeasurable() -> None:
+    assert measure(sine(1000, 0.2, 0.5), SR).lufs == -np.inf
+
+
+def test_master_rejects_a_silent_reference() -> None:
+    silence = np.zeros((2, SR), dtype=np.float32)
+    with pytest.raises(ValueError, match="reference"):
+        master(song(), SR, target_lufs=-14.0, reference=silence)

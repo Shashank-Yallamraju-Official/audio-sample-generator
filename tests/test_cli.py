@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pytest
 import soundfile as sf
 
@@ -141,3 +142,15 @@ def test_cli_rejects_a_folder_holding_only_a_smart_tempo_downmix(
     write_smart_tempo_downmix(tmp_path / "in")
     assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out")]) == 2
     assert "no audio" in capsys.readouterr().err
+
+
+def test_cli_rejects_a_silent_reference_before_writing_anything(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_stems(tmp_path / "in")
+    ref = tmp_path / "ref.wav"
+    sf.write(ref, np.zeros((SR, 2), dtype=np.float32), SR, subtype="FLOAT")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--reference", str(ref)]) == 2
+    assert "reference" in capsys.readouterr().err
+    assert not out.exists()
