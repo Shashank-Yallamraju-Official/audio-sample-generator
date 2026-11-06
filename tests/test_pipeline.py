@@ -211,3 +211,16 @@ def test_a_stem_that_rarely_plays_is_not_pushed_above_one_that_plays_throughout(
     busy_peak = peak_dbfs(result.stems["Kick A.wav"].audio)
     rare_peak = peak_dbfs(result.stems["Kick B.wav"].audio)
     assert rare_peak == pytest.approx(busy_peak, abs=3.0)
+
+
+def test_the_mix_lets_the_returns_ring_out_after_the_stems_end() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)  # every stem plays right up to its last sample
+    mix = result.rough_mix
+    assert mix.shape[1] > 4 * SR
+    assert peak_dbfs(mix[:, -SR // 100 :]) < peak_dbfs(mix) - 60
+
+
+def test_bus_prints_are_as_long_as_the_mix_and_stems_keep_their_length() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    assert {bus.shape[1] for bus in result.buses.values()} == {result.rough_mix.shape[1]}
+    assert {s.audio.shape[1] for s in result.stems.values()} == {4 * SR}

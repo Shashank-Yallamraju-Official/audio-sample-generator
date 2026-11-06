@@ -216,13 +216,19 @@ def _returns(results: dict[str, StemResult], ctx: _Context) -> dict[str, Audio]:
 def _buses(
     results: dict[str, StemResult], returns: dict[str, Audio], ctx: _Context
 ) -> tuple[dict[Bus, Audio], dict[Bus, CompResult]]:
-    """Sum stems into buses; glue and parallel-compress the drum bus."""
+    """Sum stems into buses; glue and parallel-compress the drum bus.
+
+    Returns ring out past the end of the stems, so every bus is padded to the longest part.
+    """
     groups: dict[Bus, list[Audio]] = {}
     for stem in results.values():
         groups.setdefault(BUS_BY_ROLE[stem.role], []).append(stem.audio)
     groups.setdefault(Bus.FX, []).extend(returns.values())
+    length = max(part.shape[1] for parts in groups.values() for part in parts)
     buses = {
-        bus: np.sum(parts, axis=0).astype(np.float32) for bus, parts in groups.items() if parts
+        bus: np.sum([_pad(part, length) for part in parts], axis=0).astype(np.float32)
+        for bus, parts in groups.items()
+        if parts
     }
 
     comps: dict[Bus, CompResult] = {}
