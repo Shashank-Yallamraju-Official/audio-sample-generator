@@ -1,7 +1,9 @@
 import json
+from dataclasses import replace
 
 import numpy as np
 
+from automix.master import master
 from automix.pipeline import mix_stems
 from automix.presets import Genre
 from automix.report import to_json, to_markdown
@@ -63,3 +65,43 @@ def test_markdown_report_notes_a_silent_drum_bus() -> None:
     silent = {"Kick.wav": np.zeros((2, SR), dtype=np.float32), "Pad.wav": stems()["Pad.wav"]}
     text = to_markdown(mix_stems(silent, SR, Genre.POP), Genre.POP)
     assert "Drums bus: Compressor bypassed" in text
+
+
+def test_markdown_report_describes_the_master() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    mastered = master(result.rough_mix, SR, target_lufs=-14.0)
+    text = to_markdown(result, Genre.POP, mastered)
+    section = text.split("## Master")[1]
+    assert "Adaptive Limiter" in section
+    assert "Out Ceiling -1.0 dB" in section
+    assert "LUFS" in section
+    assert "dBTP" in section
+
+
+def test_json_report_includes_master_meter() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    mastered = master(result.rough_mix, SR, target_lufs=-14.0)
+    data = json.loads(to_json(result, Genre.POP, mastered))
+    assert data["master"]["target_lufs"] == -14.0
+    assert data["master"]["after"]["true_peak_dbtp"] <= -0.95
+
+
+def test_report_without_master_has_no_master_section() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    assert "## Master" not in to_markdown(result, Genre.POP)
+    assert json.loads(to_json(result, Genre.POP))["master"] is None
+
+
+def test_markdown_report_flags_capped_limiting_and_reference_eq() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    mastered = replace(
+        master(result.rough_mix, SR, target_lufs=-14.0),
+        capped=True,
+        match_eq_db={1000.0: 1.5},
+    )
+    section = to_markdown(result, Genre.POP, mastered, reference_name="ref.wav").split("## Master")[
+        1
+    ]
+    assert "capped at 6 dB" in section
+    assert "1000 Hz +1.5 dB" in section
+    assert "ref.wav" in section

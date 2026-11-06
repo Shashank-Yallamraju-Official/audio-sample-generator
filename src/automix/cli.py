@@ -9,8 +9,9 @@ import numpy as np
 import soundfile as sf
 
 from automix._types import Audio
+from automix.master import master
 from automix.pipeline import mix_stems
-from automix.presets import parse_genre
+from automix.presets import PRESETS, parse_genre
 from automix.report import to_json, to_markdown
 
 AUDIO_SUFFIXES = frozenset({".wav", ".aif", ".aiff", ".flac"})
@@ -39,6 +40,18 @@ def _load(folder: Path) -> tuple[dict[str, Audio], int]:
     return stems, next(iter(rates.values()))
 
 
+STREAMING_LUFS = -14.0
+
+
+def _load_reference(path: Path, sr: int) -> Audio:
+    data, ref_sr = sf.read(path, always_2d=True, dtype="float32")
+    if ref_sr != sr:
+        msg = f"reference {path.name} is {ref_sr} Hz; stems are {sr} Hz"
+        raise InputError(msg)
+    audio = np.ascontiguousarray(data.T)
+    return np.repeat(audio, 2, axis=0) if audio.shape[0] == 1 else audio[:2]
+
+
 def _write(path: Path, audio: Audio, sr: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(path, audio.T, sr, subtype="FLOAT")
@@ -51,11 +64,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("-o", "--out", type=Path, required=True, help="output folder")
     parser.add_argument("--genre", default="pop", help="dance, hip-hop or pop (default pop)")
     parser.add_argument("--bpm", type=float, help="tempo; detected from the kick if omitted")
+    parser.add_argument("--reference", type=Path, help="track to match for tone and loudness")
+    parser.add_argument(
+        "--streaming", action="store_true", help="master to -14 LUFS instead of the genre target"
+    )
+    parser.add_argument("--no-master", action="store_true", help="skip the first-pass master")
     args = parser.parse_args(argv)
 
     try:
         genre = parse_genre(args.genre)
         stems, sr = _load(args.stems)
+        reference = None if args.reference is None else _load_reference(args.reference, sr)
     except (InputError, ValueError) as err:
         print(f"automix: {err}", file=sys.stderr)
         return 2
@@ -73,7 +92,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if result.ghost_kick is not None:
         _write(out / "ghost_kick.wav", result.ghost_kick, sr)
     _write(out / "rough_mix.wav", result.rough_mix, sr)
-    (out / "settings.md").write_text(to_markdown(result, genre))
-    (out / "settings.json").write_text(to_json(result, genre))
+    mastered = None
+    if not args.no_master:
+        target = STREAMING_LUFS if args.streaming else PRESETS[genre].master_lufs
+        mastered = master(result.rough_mix, sr, target, reference=reference)
+        _write(out / "master.wav", mastered.audio, sr)
+    ref_name = None if args.reference is None else args.reference.name
+    (out / "settings.md").write_text(to_markdown(result, genre, mastered, ref_name))
+    (out / "settings.json").write_text(to_json(result, genre, mastered))
     print(f"automix: wrote {len(result.stems)} stems to {out}")
     return 0

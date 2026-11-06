@@ -5,6 +5,7 @@ import json
 from automix.buses import DELAY_SENDS_DB, RETURN_BAND_HZ, REVERB_SENDS_DB, Bus
 from automix.compression import CompResult, CompSettings
 from automix.eq import cut_db
+from automix.master import MasterResult, Meter
 from automix.pipeline import MixResult, StemResult
 from automix.presets import PRESETS, Genre
 
@@ -109,7 +110,46 @@ def _bus_lines(result: MixResult, genre: Genre) -> list[str]:
     return lines
 
 
-def to_markdown(result: MixResult, genre: Genre) -> str:
+def _meter_text(meter: Meter) -> str:
+    return (
+        f"{meter.lufs:.1f} LUFS integrated, {meter.true_peak_dbtp:.1f} dBTP true peak, "
+        f"{meter.crest_db:.1f} dB crest"
+    )
+
+
+def _master_lines(mastered: MasterResult, reference_name: str | None) -> list[str]:
+    lines = ["", "## Master", ""]
+    lines.append(f"Target: {mastered.target_lufs:.1f} LUFS, ceiling -1.0 dBTP")
+    if reference_name is not None:
+        lines.append(f"Reference: {reference_name} (loudness and tonal balance matched)")
+    lines += [
+        "",
+        f"- Before: {_meter_text(mastered.before)}",
+        f"- After: {_meter_text(mastered.after)}",
+    ]
+    if mastered.match_eq_db:
+        bands = ", ".join(f"{f:g} Hz {g:+.1f} dB" for f, g in mastered.match_eq_db.items())
+        lines.append(f"- Stereo Out: Linear Phase EQ toward the reference: {bands}")
+    lines.append(
+        f"- Stereo Out: Adaptive Limiter, Gain {mastered.gain_db:+.1f} dB, Out Ceiling -1.0 dB "
+        f"(about {mastered.limiting_db:.1f} dB of limiting); or Mastering Assistant set to "
+        f"{mastered.target_lufs:.0f} LUFS"
+    )
+    if mastered.capped:
+        lines.append(
+            "- Limiting was capped at 6 dB, so the master is quieter than the target. Get the "
+            "rest from arrangement and saturation, or push the limiter only if it still sounds "
+            "right."
+        )
+    return lines
+
+
+def to_markdown(
+    result: MixResult,
+    genre: Genre,
+    mastered: MasterResult | None = None,
+    reference_name: str | None = None,
+) -> str:
     """Render the settings sheet a person copies into Logic Pro."""
     tempo = f"{result.bpm:.1f} BPM" if result.bpm is not None else "not detected"
     out = [
@@ -127,10 +167,16 @@ def to_markdown(result: MixResult, genre: Genre) -> str:
         out += ["", *_eq_lines(stem), *_comp_lines(stem), *_duck_lines(stem)]
         out.append(f"- Fader: {stem.fader_db:+.1f} dB (already applied to the processed stem)")
     out += _bus_lines(result, genre)
+    if mastered is not None:
+        out += _master_lines(mastered, reference_name)
     return "\n".join(out) + "\n"
 
 
-def to_json(result: MixResult, genre: Genre) -> str:
+def _meter_json(meter: Meter) -> dict[str, float]:
+    return {"lufs": meter.lufs, "true_peak_dbtp": meter.true_peak_dbtp, "crest_db": meter.crest_db}
+
+
+def to_json(result: MixResult, genre: Genre, mastered: MasterResult | None = None) -> str:
     """Serialise every chosen setting."""
     stems = {
         name: {
@@ -180,5 +226,16 @@ def to_json(result: MixResult, genre: Genre) -> str:
         "sample_rate": result.sr,
         "master_lufs": PRESETS[genre].master_lufs,
         "stems": stems,
+        "master": None
+        if mastered is None
+        else {
+            "target_lufs": mastered.target_lufs,
+            "gain_db": mastered.gain_db,
+            "limiting_db": mastered.limiting_db,
+            "capped": mastered.capped,
+            "match_eq_db": {str(f): g for f, g in mastered.match_eq_db.items()},
+            "before": _meter_json(mastered.before),
+            "after": _meter_json(mastered.after),
+        },
     }
     return json.dumps(data, indent=2) + "\n"

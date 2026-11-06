@@ -18,7 +18,7 @@ Design notes and the rules behind every default:
 | Genre presets for dance, hip-hop and pop (`automix.presets`) | done |
 | Pipeline, Logic handoff and CLI (`automix.pipeline`, `automix.report`, `automix.cli`) | done |
 | Bus processing: drum glue, parallel drums, reverb/delay returns, mix glue, low-end mono (`automix.buses`) | done |
-| Loudness metering and reference-track mastering | planned |
+| Loudness metering and reference-track mastering (`automix.master`) | done |
 
 ## Usage
 
@@ -30,6 +30,10 @@ or `Pad.wav`. Then run:
 uv run automix path/to/stems -o path/to/out --genre hip-hop   # --bpm 92 to skip detection
 ```
 
+Options: `--bpm 92` skips tempo detection, `--reference song.wav` matches a reference track's
+loudness and tonal balance (gently: half the octave-band difference, at most 4 dB), `--streaming`
+masters to -14 LUFS instead of the genre's club/release level, and `--no-master` skips mastering.
+
 The output folder holds:
 
 | Path | What it is |
@@ -39,7 +43,8 @@ The output folder holds:
 | `dry/` | Stems with gain staging only, to redo any move with your own plugins. |
 | `ghost_kick.wav` | A click on every kick. Mute it and use it as the Compressor's Side Chain. |
 | `rough_mix.wav` | Buses summed through mix-bus glue and low-end mono, peaking at -6 dBFS. |
-| `settings.md` / `settings.json` | Every chosen setting, written in Logic Channel EQ and Compressor terms. |
+| `master.wav` | The rough mix limited to the genre's LUFS target (dance -7, hip-hop -8, pop -9) with a -1 dBTP true-peak ceiling. Limiting is capped at 6 dB, so a dynamic mix lands quieter rather than crushed. |
+| `settings.md` / `settings.json` | Every chosen setting, written in Logic Channel EQ, Compressor and Adaptive Limiter terms, plus before/after LUFS, true peak and crest factor. |
 
 Processed stems include a starting fader balance (kick and bass loudest, hats lowest), so
 the rough mix is already roughly balanced; the settings sheet lists each fader move.
