@@ -15,7 +15,8 @@ Design notes and the rules behind every default:
 | Kick onset detection and sidechain ducking (`automix.sidechain`) | done |
 | Role detection, high-pass and resonance cuts (`automix.eq`) | done |
 | Compression fitted to target gain reduction (`automix.compression`) | done |
-| Buses, genre presets, Logic handoff, CLI | planned |
+| Genre presets for dance, hip-hop and pop (`automix.presets`) | done |
+| Buses, Logic handoff, CLI | planned |
 
 ## Development
 
