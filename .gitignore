@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+dist/
+# audio never goes in git
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3
