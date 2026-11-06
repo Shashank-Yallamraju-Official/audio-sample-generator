@@ -200,3 +200,14 @@ def test_drum_and_mix_buses_are_glued() -> None:
 def test_rough_mix_stays_mostly_mono_compatible() -> None:
     result = mix_stems(stems(), SR, Genre.POP)
     assert result.correlation > 0.5
+
+
+def test_a_stem_that_rarely_plays_is_not_pushed_above_one_that_plays_throughout() -> None:
+    busy = kicks(90, 8.0)
+    rare = busy.copy()
+    rare[:, int(0.3 * SR) : int(3.9 * SR)] = 0  # keep only the hits at 0 s and 4 s
+    rare[:, int(4.3 * SR) :] = 0
+    result = mix_stems({"Kick A.wav": busy, "Kick B.wav": rare}, SR, Genre.HIPHOP)
+    busy_peak = peak_dbfs(result.stems["Kick A.wav"].audio)
+    rare_peak = peak_dbfs(result.stems["Kick B.wav"].audio)
+    assert rare_peak == pytest.approx(busy_peak, abs=3.0)

@@ -106,3 +106,38 @@ def test_cli_rejects_a_reference_at_another_sample_rate(
     sf.write(ref, stems()["Pad.wav"].T, 44_100, subtype="FLOAT")
     assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out"), "--reference", str(ref)]) == 2
     assert "reference" in capsys.readouterr().err
+
+
+SMART_TEMPO = "Smart Tempo Multitrack Set 1.aif"
+
+
+def write_smart_tempo_downmix(folder: Path) -> None:
+    downmix = sum(audio[0] for audio in stems().values()) / len(stems())
+    sf.write(folder / SMART_TEMPO, downmix, SR, subtype="PCM_24", format="AIFF")
+
+
+def test_cli_leaves_logics_smart_tempo_downmix_out_of_the_mix(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_stems(tmp_path / "in")
+    write_smart_tempo_downmix(tmp_path / "in")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out)]) == 0
+    assert sorted(p.name for p in (out / "dry").iterdir()) == sorted(stems())
+    assert f"wrote {len(stems())} stems" in capsys.readouterr().out
+
+
+def test_cli_says_which_file_it_skipped(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    write_stems(tmp_path / "in")
+    write_smart_tempo_downmix(tmp_path / "in")
+    assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out")]) == 0
+    assert f"skipped {SMART_TEMPO}" in capsys.readouterr().err
+
+
+def test_cli_rejects_a_folder_holding_only_a_smart_tempo_downmix(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tmp_path / "in").mkdir()
+    write_smart_tempo_downmix(tmp_path / "in")
+    assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out")]) == 2
+    assert "no audio" in capsys.readouterr().err

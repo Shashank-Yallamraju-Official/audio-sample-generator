@@ -22,7 +22,7 @@ from automix.buses import (
 from automix.compression import CompResult, CompSettings, compress
 from automix.eq import HIGHPASS_HZ, Resonance, Role, apply_cuts, find_resonances, highpass
 from automix.eq import role_from_filename as _role
-from automix.gain import gain_stage, peak_dbfs, rms_dbfs
+from automix.gain import active_rms_dbfs, gain_stage, peak_dbfs
 from automix.presets import PRESETS, Genre, comp_settings, duck_settings
 from automix.sidechain import DuckSettings, apply_ducking, detect_onsets, duck_curve
 
@@ -32,8 +32,9 @@ TEMPO_RANGE_BPM = (70.0, 180.0)
 # automatic notching.
 _NO_RESONANCE_CUTS = frozenset({Role.BASS, Role.SYNTH})
 _MAX_CUT_DB = 6.0
-# Starting fader balance: each processed stem's RMS level, so the rough mix is already roughly
-# balanced (a level, not a loudness standard; tune by ear in Logic).
+# Starting fader balance: each processed stem's RMS level while it plays, so the rough mix is
+# already roughly balanced (a level, not a loudness standard; tune by ear in Logic). Gaps are
+# gated out so a part that plays rarely is not turned up to make up for its silence.
 FADER_RMS_DBFS: dict[Role, float] = {
     Role.KICK: -20.0,
     Role.BASS: -20.0,
@@ -252,7 +253,7 @@ def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:
     if duck is not None:
         out = apply_ducking(out, duck_curve(out.shape[1], onsets, sr, duck))
 
-    level = rms_dbfs(out)
+    level = active_rms_dbfs(out, sr)
     fader_db = FADER_RMS_DBFS[role] - level if np.isfinite(level) else 0.0
     out = (out * np.float32(10 ** (fader_db / 20))).astype(np.float32)
 
