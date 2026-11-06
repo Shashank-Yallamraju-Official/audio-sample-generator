@@ -104,3 +104,15 @@ def test_returns_are_not_compressed_by_default() -> None:
     result = compress(audio, SR, COMP_BY_ROLE[Role.RETURN])
     np.testing.assert_array_equal(result.audio, audio)
     assert result.stages == ()
+
+
+def test_compress_keeps_the_stereo_balance() -> None:
+    panned = dynamic_signal()
+    panned[1] *= 0.25  # right is 12 dB down, so on its own it would be compressed far less
+    out = compress(panned, SR, SETTINGS).audio
+    assert rms_dbfs(out[:1]) - rms_dbfs(out[1:]) == pytest.approx(12.04, abs=0.1)
+
+
+def test_compress_gives_identical_channels_identical_gain() -> None:
+    out = compress(dynamic_signal(), SR, SETTINGS).audio
+    np.testing.assert_array_equal(out[0], out[1])
