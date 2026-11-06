@@ -66,6 +66,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         wav = Path(name).with_suffix(".wav").name
         _write(out / "processed" / wav, stem.audio, sr)
         _write(out / "dry" / wav, stem.dry, sr)
+    for name, audio in result.returns.items():
+        _write(out / "processed" / name, audio, sr)
+    for bus, audio in result.buses.items():
+        _write(out / "buses" / f"{bus.value}.wav", audio, sr)
     if result.ghost_kick is not None:
         _write(out / "ghost_kick.wav", result.ghost_kick, sr)
     _write(out / "rough_mix.wav", result.rough_mix, sr)

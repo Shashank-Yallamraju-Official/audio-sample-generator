@@ -72,3 +72,19 @@ def test_comp_settings_fall_back_to_role_defaults() -> None:
 
 def test_dance_masters_louder_than_pop() -> None:
     assert PRESETS[Genre.DANCE].master_lufs > PRESETS[Genre.POP].master_lufs
+
+
+def test_pop_skips_parallel_drum_compression_but_dance_and_hiphop_use_it() -> None:
+    assert PRESETS[Genre.POP].buses.parallel_blend == 0
+    assert PRESETS[Genre.DANCE].buses.parallel_blend > 0
+    assert PRESETS[Genre.HIPHOP].buses.parallel_blend > 0
+
+
+def test_mix_bus_glue_stays_gentle() -> None:
+    for preset in PRESETS.values():
+        assert preset.buses.mix_glue.ratio <= 2.0
+        assert preset.buses.mix_glue.target_gr_db <= 2.0
+
+
+def test_hiphop_keeps_the_808_sub_mono_below_a_lower_crossover() -> None:
+    assert PRESETS[Genre.HIPHOP].buses.low_mono_hz < PRESETS[Genre.DANCE].buses.low_mono_hz

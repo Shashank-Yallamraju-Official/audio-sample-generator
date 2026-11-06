@@ -57,3 +57,11 @@ def test_cli_skips_the_ghost_kick_without_a_kick_stem(tmp_path: Path) -> None:
     sf.write(tmp_path / "in" / "Pad.wav", stems()["Pad.wav"].T, SR, subtype="FLOAT")
     assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out")]) == 0
     assert not (tmp_path / "out" / "ghost_kick.wav").exists()
+
+
+def test_cli_writes_bus_prints_and_returns(tmp_path: Path) -> None:
+    write_stems(tmp_path / "in")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--genre", "pop"]) == 0
+    assert (out / "buses" / "Drums.wav").exists()
+    assert (out / "processed" / "Reverb Return.wav").exists()

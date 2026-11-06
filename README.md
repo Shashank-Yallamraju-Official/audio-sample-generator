@@ -17,7 +17,8 @@ Design notes and the rules behind every default:
 | Compression fitted to target gain reduction (`automix.compression`) | done |
 | Genre presets for dance, hip-hop and pop (`automix.presets`) | done |
 | Pipeline, Logic handoff and CLI (`automix.pipeline`, `automix.report`, `automix.cli`) | done |
-| Bus processing (drum glue, low-end mono, send returns), loudness metering | planned |
+| Bus processing: drum glue, parallel drums, reverb/delay returns, mix glue, low-end mono (`automix.buses`) | done |
+| Loudness metering and reference-track mastering | planned |
 
 ## Usage
 
@@ -33,10 +34,11 @@ The output folder holds:
 
 | Path | What it is |
 | --- | --- |
-| `processed/` | Stems with gain, EQ, compression and ducking applied. Drag into Logic at bar 1. |
+| `processed/` | Stems with gain, EQ, compression, ducking and fader applied, plus `Reverb Return.wav` and `Delay Return.wav`. Drag into Logic at bar 1. |
+| `buses/` | Each bus (Drums, Bass, Music, Vocals, FX) after bus processing, for reference or quick printing. |
 | `dry/` | Stems with gain staging only, to redo any move with your own plugins. |
 | `ghost_kick.wav` | A click on every kick. Mute it and use it as the Compressor's Side Chain. |
-| `rough_mix.wav` | All processed stems summed, peaking at -6 dBFS. |
+| `rough_mix.wav` | Buses summed through mix-bus glue and low-end mono, peaking at -6 dBFS. |
 | `settings.md` / `settings.json` | Every chosen setting, written in Logic Channel EQ and Compressor terms. |
 
 Processed stems include a starting fader balance (kick and bass loudest, hats lowest), so

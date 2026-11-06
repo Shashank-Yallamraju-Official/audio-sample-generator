@@ -2,6 +2,8 @@
 
 import json
 
+from automix.buses import DELAY_SENDS_DB, RETURN_BAND_HZ, REVERB_SENDS_DB, Bus
+from automix.compression import CompResult, CompSettings
 from automix.eq import cut_db
 from automix.pipeline import MixResult, StemResult
 from automix.presets import PRESETS, Genre
@@ -44,6 +46,69 @@ def _duck_lines(stem: StemResult) -> list[str]:
     ]
 
 
+def _glue(label: str, settings: CompSettings, comp: CompResult) -> str:
+    if not comp.stages:
+        return f"- {label}: Compressor bypassed (bus is silent)"
+    stage = comp.stages[0]
+    return (
+        f"- {label}: Compressor (Vintage VCA), Ratio {settings.ratio:g}:1, "
+        f"Attack {settings.attack_ms:g} ms, Release {settings.release_ms:g} ms, "
+        f"Threshold {stage.threshold_db:.1f} dB (about {comp.gr_db:.1f} dB of gain reduction)"
+    )
+
+
+def _send_lines(result: MixResult) -> list[str]:
+    lines = []
+    for name, stem in result.stems.items():
+        for target, sends in (
+            ("Reverb Return.wav", REVERB_SENDS_DB),
+            ("Delay Return.wav", DELAY_SENDS_DB),
+        ):
+            if stem.role in sends and target in result.returns:
+                lines.append(f"- Send: {name} to {target} at {sends[stem.role]:g} dB")
+    return lines
+
+
+def _bus_lines(result: MixResult, genre: Genre) -> list[str]:
+    settings = PRESETS[genre].buses
+    low, high = RETURN_BAND_HZ
+    names = ", ".join(bus.value for bus in result.buses)
+    lines = [
+        "",
+        "## Buses",
+        "",
+        f"Group stems into one Track Stack per bus: {names}. Bus prints are in `buses/`.",
+        "",
+    ]
+    if Bus.DRUMS in result.bus_comp:
+        lines.append(_glue("Drums bus", settings.drum_glue, result.bus_comp[Bus.DRUMS]))
+        if settings.parallel_blend > 0:
+            lines.append(
+                "- Drums bus: Parallel compression, a send to an aux with Compressor at "
+                "Ratio 8:1, Attack 1 ms, Release 80 ms, about 10 dB of gain reduction, "
+                f"blended at {settings.parallel_blend:.0%} of the dry level"
+            )
+    for name in result.returns:
+        effect = (
+            "Space Designer or ChromaVerb"
+            if name.startswith("Reverb")
+            else "Tape Delay, dotted 1/8"
+        )
+        lines.append(
+            f"- {name}: aux with {effect}, 100% wet, then Channel EQ High Pass {low:.0f} Hz "
+            f"and Low Pass {high / 1000:g} kHz"
+        )
+    lines += _send_lines(result)
+    lines += [
+        _glue("Stereo Out", settings.mix_glue, result.mix_comp),
+        f"- Stereo Out: Channel EQ in Side mode: High Pass {settings.low_mono_hz:.0f} Hz "
+        "(keeps the low end mono)",
+        f"- Stereo correlation of the rough mix: {result.correlation:+.2f} "
+        "(above 0 is mono-safe; near +1 is narrow)",
+    ]
+    return lines
+
+
 def to_markdown(result: MixResult, genre: Genre) -> str:
     """Render the settings sheet a person copies into Logic Pro."""
     tempo = f"{result.bpm:.1f} BPM" if result.bpm is not None else "not detected"
@@ -61,6 +126,7 @@ def to_markdown(result: MixResult, genre: Genre) -> str:
         out += ["", f"## {name}", "", f"Role: {stem.role.value} · Trim: {stem.gain_db:+.1f} dB"]
         out += ["", *_eq_lines(stem), *_comp_lines(stem), *_duck_lines(stem)]
         out.append(f"- Fader: {stem.fader_db:+.1f} dB (already applied to the processed stem)")
+    out += _bus_lines(result, genre)
     return "\n".join(out) + "\n"
 
 
@@ -93,8 +159,23 @@ def to_json(result: MixResult, genre: Genre) -> str:
         }
         for name, s in result.stems.items()
     }
+    bus_settings = PRESETS[genre].buses
+    buses = {
+        bus.value: {
+            "glue_gr_db": result.bus_comp[bus].gr_db if bus in result.bus_comp else 0.0,
+            "parallel_blend": bus_settings.parallel_blend if bus is Bus.DRUMS else 0.0,
+        }
+        for bus in result.buses
+    }
     data = {
         "genre": genre.value,
+        "buses": buses,
+        "returns": sorted(result.returns),
+        "mix": {
+            "glue_gr_db": result.mix_comp.gr_db,
+            "low_mono_hz": bus_settings.low_mono_hz,
+            "correlation": result.correlation,
+        },
         "bpm": result.bpm,
         "sample_rate": result.sr,
         "master_lufs": PRESETS[genre].master_lufs,
