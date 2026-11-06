@@ -39,6 +39,9 @@ The output folder holds:
 | `rough_mix.wav` | All processed stems summed, peaking at -6 dBFS. |
 | `settings.md` / `settings.json` | Every chosen setting, written in Logic Channel EQ and Compressor terms. |
 
+Processed stems include a starting fader balance (kick and bass loudest, hats lowest), so
+the rough mix is already roughly balanced; the settings sheet lists each fader move.
+
 Stem roles come from filenames; anything unrecognised is treated as `other` and gets
 gentle defaults.
 

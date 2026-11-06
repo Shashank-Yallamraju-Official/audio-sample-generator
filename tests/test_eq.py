@@ -6,6 +6,7 @@ from automix.eq import (
     Resonance,
     Role,
     apply_cuts,
+    cut_db,
     find_resonances,
     highpass,
     role_from_filename,
@@ -112,3 +113,19 @@ def test_apply_cuts_with_no_resonances_is_a_copy() -> None:
     out = apply_cuts(tone, SR, [])
     np.testing.assert_array_equal(out, tone)
     assert out is not tone
+
+
+def test_find_resonances_ignores_peaks_under_8_db() -> None:
+    # Drum shells and cymbals have natural modes 6-8 dB proud; those are tone, not problems.
+    found = find_resonances(_noise_with_tone(1000, 0.3), SR)
+    assert all(r.excess_db >= 8.0 for r in found)
+
+
+def test_cut_depth_is_half_the_excess() -> None:
+    assert cut_db(Resonance(1000.0, 9.0)) == pytest.approx(4.5)
+    assert cut_db(Resonance(1000.0, 30.0)) == pytest.approx(6.0)
+
+
+def test_at_most_three_cuts_by_default() -> None:
+    audio = np.sum([_noise_with_tone(f, 0.3) for f in (400, 900, 2000, 4500, 9000)], axis=0)
+    assert len(find_resonances(audio, SR)) <= 3
