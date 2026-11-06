@@ -34,6 +34,24 @@ from .conftest import SR, sine
         ("keys.wav", Role.SYNTH),
         ("Reverb Return.wav", Role.RETURN),
         ("mystery.wav", Role.OTHER),
+        # A kick's own layers and names are kicks, not basses.
+        ("Kick Sub.wav", Role.KICK),
+        ("Bass Drum.wav", Role.KICK),
+        ("BD1.wav", Role.KICK),
+        ("808 Kick.wav", Role.BASS),
+        ("Sub.wav", Role.BASS),
+        # Short keywords only count at the start of a word.
+        ("06 Rim.wav", Role.SNARE),
+        ("Rimshot.wav", Role.SNARE),
+        ("SD2.wav", Role.SNARE),
+        ("Vox_trim.wav", Role.VOCAL),
+        ("Marimba.wav", Role.OTHER),
+        ("What.wav", Role.OTHER),
+        ("Open Hat.wav", Role.HATS),
+        ("ClosedHat.wav", Role.HATS),
+        ("HH1.wav", Role.HATS),
+        ("Ride.wav", Role.HATS),
+        ("Bride Lead.wav", Role.SYNTH),
     ],
 )
 def test_role_from_filename(name: str, role: Role) -> None:

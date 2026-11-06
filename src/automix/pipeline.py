@@ -32,6 +32,10 @@ TEMPO_RANGE_BPM = (70.0, 180.0)
 # automatic notching.
 _NO_RESONANCE_CUTS = frozenset({Role.BASS, Role.SYNTH})
 _MAX_CUT_DB = 6.0
+_RESONANCE_RANGE_HZ = (60.0, 12_000.0)
+# A drum's fundamental is its weight or body, not a resonance, so the search starts above it:
+# over the kick's 50-80 Hz weight and the snare's 150-250 Hz body.
+_RESONANCE_FLOOR_HZ: dict[Role, float] = {Role.KICK: 200.0, Role.SNARE: 300.0}
 # Starting fader balance: each processed stem's RMS level while it plays, so the rough mix is
 # already roughly balanced (a level, not a loudness standard; tune by ear in Logic). Gaps are
 # gated out so a part that plays rarely is not turned up to make up for its silence.
@@ -246,8 +250,11 @@ def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:
     cutoff = HIGHPASS_HZ[role]
     out = highpass(staged.audio, sr, cutoff)
 
+    search_hz = (_RESONANCE_FLOOR_HZ.get(role, _RESONANCE_RANGE_HZ[0]), _RESONANCE_RANGE_HZ[1])
     cuts: tuple[Resonance, ...] = (
-        () if role in _NO_RESONANCE_CUTS else tuple(find_resonances(out, sr))
+        ()
+        if role in _NO_RESONANCE_CUTS
+        else tuple(find_resonances(out, sr, freq_range_hz=search_hz))
     )
     out = apply_cuts(out, sr, list(cuts), max_cut_db=_MAX_CUT_DB)
 

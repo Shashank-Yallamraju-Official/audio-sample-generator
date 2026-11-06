@@ -224,3 +224,32 @@ def test_bus_prints_are_as_long_as_the_mix_and_stems_keep_their_length() -> None
     result = mix_stems(stems(), SR, Genre.POP)
     assert {bus.shape[1] for bus in result.buses.values()} == {result.rough_mix.shape[1]}
     assert {s.audio.shape[1] for s in result.stems.values()} == {4 * SR}
+
+
+def drum_hits(body_hz: float, ring_hz: float, seconds: float = 4.0) -> npt.NDArray[np.float32]:
+    """A tuned drum twice a second: a strong body tone, a quieter ring and a noise burst."""
+    rng = np.random.default_rng(0)
+    t = np.arange(int(0.3 * SR)) / SR
+    hit = (
+        0.5 * np.sin(2 * np.pi * body_hz * t) * np.exp(-t * 15)
+        + 0.2 * np.sin(2 * np.pi * ring_hz * t) * np.exp(-t * 15)
+        + 0.05 * rng.standard_normal(len(t)) * np.exp(-t * 40)
+    ).astype(np.float32)
+    out = np.zeros((2, int(SR * seconds)), dtype=np.float32)
+    for start in range(0, out.shape[1] - len(hit), SR // 2):
+        out[:, start : start + len(hit)] += hit
+    return out
+
+
+def test_a_snares_body_is_not_notched_but_its_ring_is() -> None:
+    result = mix_stems({"Snare.wav": drum_hits(body_hz=200, ring_hz=700)}, SR, Genre.POP)
+    cut_hz = [cut.freq_hz for cut in result.stems["Snare.wav"].cuts]
+    assert min(cut_hz) > 300
+    assert any(hz == pytest.approx(700, rel=0.03) for hz in cut_hz)
+
+
+def test_a_kicks_fundamental_is_not_notched_but_its_boxiness_is() -> None:
+    result = mix_stems({"Kick.wav": drum_hits(body_hz=80, ring_hz=350)}, SR, Genre.POP)
+    cut_hz = [cut.freq_hz for cut in result.stems["Kick.wav"].cuts]
+    assert min(cut_hz) > 200
+    assert any(hz == pytest.approx(350, rel=0.03) for hz in cut_hz)
