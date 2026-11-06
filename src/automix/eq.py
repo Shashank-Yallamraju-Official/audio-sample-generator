@@ -40,14 +40,21 @@ HIGHPASS_HZ: dict[Role, float | None] = {
     Role.OTHER: None,
 }
 
-# Checked in order: the first matching role wins, so "808 kick" is a bass and
-# "vocal reverb" is a return.
+# Checked in order: the first matching role wins, so "vocal reverb" is a return, "808 kick"
+# is a bass, and "kick sub" or "bass drum" is a kick. Short keywords only count at the start
+# of a word, so "trim" is not a rim and "what" is not a hat.
 _ROLE_PATTERNS: list[tuple[Role, re.Pattern[str]]] = [
     (Role.RETURN, re.compile(r"reverb|verb|delay|return|\bfx\b")),
-    (Role.BASS, re.compile(r"808|bass|\bsub\b")),
-    (Role.KICK, re.compile(r"kick|\bbd\b|\bkik\b")),
-    (Role.SNARE, re.compile(r"snare|clap|\bsd\b|rim")),
-    (Role.HATS, re.compile(r"hat|\bhh\b|cymbal|ride|crash|perc|shaker|tamb")),
+    (Role.BASS, re.compile(r"808")),
+    (Role.KICK, re.compile(r"kick|\bbd\d*\b|\bkik\b|bass ?drum")),
+    (Role.BASS, re.compile(r"bass|\bsub\b")),
+    (Role.SNARE, re.compile(r"snare|clap|\bsd\d*\b|\brim")),
+    (
+        Role.HATS,
+        re.compile(
+            r"(?:\b|hi ?|open ?|closed? ?)hat|\bhh\d*\b|cymbal|\bride|crash|perc|shaker|tamb"
+        ),
+    ),
     (Role.VOCAL, re.compile(r"vox|vocal|voice|\bvo\b|adlib")),
     (Role.SYNTH, re.compile(r"synth|pad|keys|piano|chord|lead|pluck|arp|guitar|string")),
 ]

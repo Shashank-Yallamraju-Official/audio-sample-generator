@@ -9,7 +9,7 @@ import numpy as np
 import soundfile as sf
 
 from automix._types import Audio
-from automix.master import master
+from automix.master import master, measure
 from automix.pipeline import mix_stems
 from automix.presets import PRESETS, parse_genre
 from automix.report import to_json, to_markdown
@@ -56,7 +56,11 @@ def _load_reference(path: Path, sr: int) -> Audio:
         msg = f"reference {path.name} is {ref_sr} Hz; stems are {sr} Hz"
         raise InputError(msg)
     audio = np.ascontiguousarray(data.T)
-    return np.repeat(audio, 2, axis=0) if audio.shape[0] == 1 else audio[:2]
+    reference = np.repeat(audio, 2, axis=0) if audio.shape[0] == 1 else audio[:2]
+    if not np.isfinite(measure(reference, sr).lufs):
+        msg = f"reference {path.name} is silent or shorter than 0.4 s"
+        raise InputError(msg)
+    return reference
 
 
 def _write(path: Path, audio: Audio, sr: int) -> None:
@@ -80,6 +84,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         genre = parse_genre(args.genre)
+        if args.out.resolve() == args.stems.resolve():
+            msg = "the output folder must not be the stems folder, or the next run mixes the mix"
+            raise InputError(msg)
         stems, sr = _load(args.stems)
         reference = None if args.reference is None else _load_reference(args.reference, sr)
     except (InputError, ValueError) as err:

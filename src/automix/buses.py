@@ -84,6 +84,10 @@ DELAY_SENDS_DB: dict[Role, float] = {Role.VOCAL: -20.0, Role.SYNTH: -26.0}
 RETURN_BAND_HZ = (250.0, 7000.0)
 DOTTED_EIGHTH_BEATS = 0.75
 _DEFAULT_DELAY_S = 0.375
+# Returns run on past the end of the stems so reverb and echoes ring out instead of being cut.
+RETURN_TAIL_SECONDS = 6.0
+_TAIL_FLOOR_DBFS = -90.0  # the tail is trimmed once it has died away below this
+_TAIL_FADE_SECONDS = 0.05
 
 
 def _send(sources: dict[Role, list[Audio]], levels: dict[Role, float]) -> Audio | None:
@@ -101,16 +105,31 @@ def _band_limit(audio: Audio, sr: int) -> Audio:
     return signal.sosfilt(sos, highpass(audio, sr, low), axis=-1).astype(np.float32)
 
 
+def _ring_out(effect: Reverb | Delay, send: Audio, sr: int) -> Audio:
+    """Run ``send`` through ``effect`` with room for its tail, trimmed once it has died away."""
+    padded = np.pad(send, ((0, 0), (0, int(RETURN_TAIL_SECONDS * sr))))
+    wet = _band_limit(np.asarray(effect(padded, sr)), sr)
+    audible = np.flatnonzero(np.max(np.abs(wet), axis=0) > 10 ** (_TAIL_FLOOR_DBFS / 20))
+    end = max(send.shape[1], int(audible[-1]) + 1 if audible.size else 0)
+    out = wet[:, :end].copy()
+    fade = min(int(_TAIL_FADE_SECONDS * sr), end - send.shape[1])
+    out[:, end - fade :] *= np.linspace(1.0, 0.0, fade, dtype=np.float32)
+    return out
+
+
 def make_returns(sources: dict[Role, list[Audio]], sr: int, bpm: float | None) -> dict[str, Audio]:
-    """Render the reverb and delay returns fed by ``sources`` (role -> processed stems)."""
+    """Render the reverb and delay returns fed by ``sources`` (role -> processed stems).
+
+    Each return is as long as its tail needs, so it can be longer than the sources.
+    """
     returns: dict[str, Audio] = {}
     verb_send = _send(sources, REVERB_SENDS_DB)
     if verb_send is not None:
         verb = Reverb(room_size=0.6, damping=0.5, wet_level=1.0, dry_level=0.0, width=1.0)
-        returns["Reverb Return.wav"] = _band_limit(np.asarray(verb(verb_send, sr)), sr)
+        returns["Reverb Return.wav"] = _ring_out(verb, verb_send, sr)
     delay_send = _send(sources, DELAY_SENDS_DB)
     if delay_send is not None:
         seconds = _DEFAULT_DELAY_S if bpm is None else DOTTED_EIGHTH_BEATS * 60 / bpm
         delay = Delay(delay_seconds=seconds, feedback=0.3, mix=1.0)
-        returns["Delay Return.wav"] = _band_limit(np.asarray(delay(delay_send, sr)), sr)
+        returns["Delay Return.wav"] = _ring_out(delay, delay_send, sr)
     return returns

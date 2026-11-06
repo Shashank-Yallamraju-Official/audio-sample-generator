@@ -18,6 +18,7 @@ from automix.gain import rms_dbfs
 MAX_GR_PER_STAGE_DB = 6.0
 _SEARCH_RANGE_DB = (-80.0, 0.0)
 _SEARCH_STEPS = 20  # 80 dB / 2**20: far finer than any audible difference
+_DETECTOR_FLOOR = np.float32(1e-9)  # keeps the gain defined through digital silence
 
 
 @dataclass(frozen=True)
@@ -52,7 +53,12 @@ def _compressor(threshold_db: float, settings: CompSettings) -> Compressor:
 
 
 def _run(audio: Audio, sr: int, threshold_db: float, settings: CompSettings) -> Audio:
-    return np.asarray(_compressor(threshold_db, settings)(audio, sr), dtype=np.float32)
+    # pedalboard's Compressor follows each channel on its own, which shifts the stereo image
+    # whenever one side is louder. So run it on one detector channel (the louder side of each
+    # sample) and apply the gain it chose to every channel.
+    detector = np.maximum(np.max(np.abs(audio), axis=0, keepdims=True), _DETECTOR_FLOOR)
+    squeezed = np.asarray(_compressor(threshold_db, settings)(detector, sr), dtype=np.float32)
+    return (audio * (squeezed / detector)).astype(np.float32)
 
 
 def measure_gr_db(audio: Audio, sr: int, threshold_db: float, settings: CompSettings) -> float:

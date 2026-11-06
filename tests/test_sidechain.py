@@ -86,3 +86,23 @@ def test_duck_settings_default_to_a_gentle_sixteenth_style_duck() -> None:
     settings = DuckSettings()
     assert settings.depth_db == 6.0
     assert settings.release_s == 0.1
+
+
+def deep_kick_track(sr: int, times_s: list[float], seconds: float = 4.0) -> npt.NDArray[np.float32]:
+    """Slow 50 Hz kicks with a long tail, rendered at ``sr``."""
+    out = np.zeros((2, int(sr * seconds)), dtype=np.float32)
+    t = np.arange(int(0.3 * sr)) / sr
+    hit = (np.sin(2 * np.pi * 50 * t) * np.exp(-t * 12)).astype(np.float32)
+    for onset in times_s:
+        start = int(onset * sr)
+        end = min(start + len(hit), out.shape[1])
+        out[:, start:end] += hit[: end - start]
+    return out
+
+
+@pytest.mark.parametrize("sr", [44_100, 48_000, 88_200, 96_000])
+def test_detects_each_kick_once_at_any_sample_rate(sr: int) -> None:
+    times = [i * 0.5 for i in range(8)]
+    onsets = detect_onsets(deep_kick_track(sr, times), sr)
+    assert len(onsets) == len(times)
+    np.testing.assert_allclose(onsets / sr, times, atol=0.005)

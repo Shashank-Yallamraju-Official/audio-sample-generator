@@ -11,7 +11,7 @@ from automix.buses import (
     stereo_correlation,
 )
 from automix.eq import Role
-from automix.gain import rms_dbfs
+from automix.gain import peak_dbfs, rms_dbfs
 
 from .conftest import SR, sine
 
@@ -107,3 +107,27 @@ def test_returns_are_band_limited() -> None:
     low = spectrum[(freqs > 50) & (freqs < 70)].max()
     mid = spectrum[(freqs > 950) & (freqs < 1050)].max()
     assert 20 * np.log10(low / mid) < -15
+
+
+def final_note() -> npt.NDArray[np.float32]:
+    """One second of audio whose only note is in the last 100 ms."""
+    out = np.zeros((2, SR), dtype=np.float32)
+    out[:, -SR // 10 :] = sine(440, 0.1, 0.5)
+    return out
+
+
+def test_reverb_return_rings_out_past_the_end_of_the_send() -> None:
+    verb = make_returns({Role.VOCAL: [final_note()]}, SR, bpm=120)["Reverb Return.wav"]
+    assert verb.shape[1] > SR
+    assert peak_dbfs(verb[:, -SR // 100 :]) < -80
+
+
+def test_delay_return_carries_the_echo_of_a_final_note() -> None:
+    delay = make_returns({Role.VOCAL: [final_note()]}, SR, bpm=120)["Delay Return.wav"]
+    assert peak_dbfs(delay[:, SR:]) > -60
+
+
+def test_returns_of_a_silent_send_keep_the_send_length() -> None:
+    silence = np.zeros((2, SR), dtype=np.float32)
+    returns = make_returns({Role.VOCAL: [silence]}, SR, bpm=120)
+    assert {r.shape[1] for r in returns.values()} == {SR}
