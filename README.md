@@ -16,7 +16,31 @@ Design notes and the rules behind every default:
 | Role detection, high-pass and resonance cuts (`automix.eq`) | done |
 | Compression fitted to target gain reduction (`automix.compression`) | done |
 | Genre presets for dance, hip-hop and pop (`automix.presets`) | done |
-| Buses, Logic handoff, CLI | planned |
+| Pipeline, Logic handoff and CLI (`automix.pipeline`, `automix.report`, `automix.cli`) | done |
+| Bus processing (drum glue, low-end mono, send returns), loudness metering | planned |
+
+## Usage
+
+Export every track from Logic as a stem starting at bar 1 (File > Export > All Tracks as Audio
+Files), with names that say what each stem is, such as `Kick.wav`, `808.wav`, `Lead Vox.wav`
+or `Pad.wav`. Then run:
+
+```sh
+uv run automix path/to/stems -o path/to/out --genre hip-hop   # --bpm 92 to skip detection
+```
+
+The output folder holds:
+
+| Path | What it is |
+| --- | --- |
+| `processed/` | Stems with gain, EQ, compression and ducking applied. Drag into Logic at bar 1. |
+| `dry/` | Stems with gain staging only, to redo any move with your own plugins. |
+| `ghost_kick.wav` | A click on every kick. Mute it and use it as the Compressor's Side Chain. |
+| `rough_mix.wav` | All processed stems summed, peaking at -6 dBFS. |
+| `settings.md` / `settings.json` | Every chosen setting, written in Logic Channel EQ and Compressor terms. |
+
+Stem roles come from filenames; anything unrecognised is treated as `other` and gets
+gentle defaults.
 
 ## Development
 
