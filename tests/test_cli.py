@@ -65,3 +65,44 @@ def test_cli_writes_bus_prints_and_returns(tmp_path: Path) -> None:
     assert main([str(tmp_path / "in"), "-o", str(out), "--genre", "pop"]) == 0
     assert (out / "buses" / "Drums.wav").exists()
     assert (out / "processed" / "Reverb Return.wav").exists()
+
+
+def test_cli_masters_to_the_genre_target_by_default(tmp_path: Path) -> None:
+    write_stems(tmp_path / "in")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--genre", "pop"]) == 0
+    assert (out / "master.wav").exists()
+    assert "Target: -9.0 LUFS" in (out / "settings.md").read_text()
+
+
+def test_cli_streaming_flag_targets_minus_14(tmp_path: Path) -> None:
+    write_stems(tmp_path / "in")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--streaming"]) == 0
+    assert "Target: -14.0 LUFS" in (out / "settings.md").read_text()
+
+
+def test_cli_can_skip_mastering(tmp_path: Path) -> None:
+    write_stems(tmp_path / "in")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--no-master"]) == 0
+    assert not (out / "master.wav").exists()
+
+
+def test_cli_matches_a_reference_track(tmp_path: Path) -> None:
+    write_stems(tmp_path / "in")
+    ref = tmp_path / "reference.wav"
+    sf.write(ref, (stems()["Kick.wav"] + stems()["Pad.wav"]).T, SR, subtype="FLOAT")
+    out = tmp_path / "out"
+    assert main([str(tmp_path / "in"), "-o", str(out), "--reference", str(ref)]) == 0
+    assert "Reference: reference.wav" in (out / "settings.md").read_text()
+
+
+def test_cli_rejects_a_reference_at_another_sample_rate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_stems(tmp_path / "in")
+    ref = tmp_path / "reference.wav"
+    sf.write(ref, stems()["Pad.wav"].T, 44_100, subtype="FLOAT")
+    assert main([str(tmp_path / "in"), "-o", str(tmp_path / "out"), "--reference", str(ref)]) == 2
+    assert "reference" in capsys.readouterr().err
