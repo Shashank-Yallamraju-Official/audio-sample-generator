@@ -154,3 +154,11 @@ def test_cli_rejects_a_silent_reference_before_writing_anything(
     assert main([str(tmp_path / "in"), "-o", str(out), "--reference", str(ref)]) == 2
     assert "reference" in capsys.readouterr().err
     assert not out.exists()
+
+
+def test_cli_refuses_to_write_into_the_stems_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_stems(tmp_path / "in")
+    assert main([str(tmp_path / "in"), "-o", str(tmp_path / "in" / ".")]) == 2
+    assert "stems folder" in capsys.readouterr().err

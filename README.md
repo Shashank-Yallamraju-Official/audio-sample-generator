@@ -38,7 +38,7 @@ The output folder holds:
 
 | Path | What it is |
 | --- | --- |
-| `processed/` | Stems with gain, EQ, compression, ducking and fader applied, plus `Reverb Return.wav` and `Delay Return.wav`. Drag into Logic at bar 1. |
+| `processed/` | Stems with gain, EQ, compression, ducking and fader applied, plus `Reverb Return.wav` and `Delay Return.wav`, which ring out past the end of the stems. Drag into Logic at bar 1. |
 | `buses/` | Each bus (Drums, Bass, Music, Vocals, FX) after bus processing, for reference or quick printing. |
 | `dry/` | Stems with gain staging only, to redo any move with your own plugins. |
 | `ghost_kick.wav` | A click on every kick. Mute it and use it as the Compressor's Side Chain. |

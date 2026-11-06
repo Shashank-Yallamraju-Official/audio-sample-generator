@@ -84,6 +84,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         genre = parse_genre(args.genre)
+        if args.out.resolve() == args.stems.resolve():
+            msg = "the output folder must not be the stems folder, or the next run mixes the mix"
+            raise InputError(msg)
         stems, sr = _load(args.stems)
         reference = None if args.reference is None else _load_reference(args.reference, sr)
     except (InputError, ValueError) as err:
