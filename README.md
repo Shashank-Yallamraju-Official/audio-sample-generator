@@ -13,7 +13,8 @@ Design notes and the rules behind every default:
 | --- | --- |
 | Gain staging (`automix.gain`) | done |
 | Kick onset detection and sidechain ducking (`automix.sidechain`) | done |
-| Cleanup EQ, compression, buses, genre presets, Logic handoff, CLI | planned |
+| Role detection, high-pass and resonance cuts (`automix.eq`) | done |
+| Compression, buses, genre presets, Logic handoff, CLI | planned |
 
 ## Development
 
