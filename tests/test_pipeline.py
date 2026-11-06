@@ -253,3 +253,32 @@ def test_a_kicks_fundamental_is_not_notched_but_its_boxiness_is() -> None:
     cut_hz = [cut.freq_hz for cut in result.stems["Kick.wav"].cuts]
     assert min(cut_hz) > 200
     assert any(hz == pytest.approx(350, rel=0.03) for hz in cut_hz)
+
+
+@pytest.mark.parametrize("bpm", [92.0, 124.0, 128.0, 140.0])
+def test_estimate_bpm_is_accurate_to_a_twentieth_on_a_steady_grid(bpm: float) -> None:
+    onsets = np.round(np.arange(0.0, 180.0, 60 / bpm) * SR).astype(np.int64)
+    assert estimate_bpm(onsets, SR) == pytest.approx(bpm, abs=0.05)
+
+
+def test_tempo_comes_from_snare_and_hats_when_there_is_no_kick() -> None:
+    bpm = 140
+    sixteenth = 60 / bpm / 4
+
+    def hits(steps: list[int], freq: float, decay: float) -> npt.NDArray[np.float32]:
+        out = np.zeros((2, int(SR * 8 * 16 * sixteenth)), dtype=np.float32)
+        t = np.arange(int(0.08 * SR)) / SR
+        hit = (0.8 * np.sin(2 * np.pi * freq * t) * np.exp(-t * decay)).astype(np.float32)
+        for onset in _grid(bpm, steps):
+            end = min(onset + len(hit), out.shape[1])
+            out[:, onset:end] += hit[: end - onset]
+        return out
+
+    groove = {
+        "Snare.wav": hits([4, 12], 200, 40),
+        "HiHat.wav": hits(list(range(0, 16, 2)), 7000, 120),
+    }
+    result = mix_stems(groove, SR, Genre.DANCE)
+    assert result.bpm == pytest.approx(140, rel=0.02)
+    assert result.ghost_kick is None
+    assert all(s.duck is None for s in result.stems.values())

@@ -95,8 +95,11 @@ class MixResult:
     correlation: float
 
 
-_ONSET_FPS = 100  # onset-train frame rate for tempo analysis
+_ONSET_FPS = 1000  # onset-train frame rate for tempo analysis
+_ONSET_SMOOTHING_S = 0.01  # tolerance for onsets that land a little off the grid
 _PRIOR_OCTAVES = 0.5  # width of the tempo prior, in octaves (one standard deviation)
+_REFINE_BEATS = 16  # whole beats of autocorrelation that pin the period down
+_REFINE_SPAN = 0.02  # refine within 2% of the coarse estimate
 
 
 def estimate_bpm(onsets: SampleIndices, sr: int, prior_bpm: float = 110.0) -> float | None:
@@ -104,14 +107,16 @@ def estimate_bpm(onsets: SampleIndices, sr: int, prior_bpm: float = 110.0) -> fl
 
     Each candidate beat period is scored on the autocorrelation at that period plus half its
     double and half its half (so a groove that only repeats every two beats still counts),
-    weighted by a log-normal prior around ``prior_bpm`` to settle half/double-time ties.
+    weighted by a log-normal prior around ``prior_bpm`` to settle half/double-time ties. The
+    winner is then refined, without the prior, on the autocorrelation at up to 16 whole beats,
+    which pins the period down far better than one beat can.
     """
     frames = np.round(np.asarray(onsets) * _ONSET_FPS / sr).astype(np.int64)
     if len(np.unique(frames)) < 2:
         return None
     train = np.zeros(int(frames.max()) + 1)
     np.add.at(train, frames, 1.0)
-    train = ndimage.gaussian_filter1d(train, sigma=1.0)
+    train = ndimage.gaussian_filter1d(train, sigma=_ONSET_SMOOTHING_S * _ONSET_FPS)
     train -= train.mean()
     ac = signal.correlate(train, train, mode="full")[len(train) - 1 :]
     ac = np.clip(ac / ac[0], 0.0, None)
@@ -119,12 +124,18 @@ def estimate_bpm(onsets: SampleIndices, sr: int, prior_bpm: float = 110.0) -> fl
     def at(lag: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         return np.asarray(np.interp(lag, np.arange(len(ac)), ac, right=0.0), dtype=np.float64)
 
+    def lag(bpm: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        return 60 * _ONSET_FPS / bpm
+
     low, high = TEMPO_RANGE_BPM
-    candidates = np.arange(low, high + 0.05, 0.1)
-    lag = 60 * _ONSET_FPS / candidates
-    prior = np.exp(-0.5 * (np.log2(candidates / prior_bpm) / _PRIOR_OCTAVES) ** 2)
-    score = (at(lag) + 0.5 * at(2 * lag) + 0.5 * at(lag / 2)) * prior
-    return float(candidates[int(np.argmax(score))])
+    coarse = np.arange(low, high + 0.05, 0.1)
+    prior = np.exp(-0.5 * (np.log2(coarse / prior_bpm) / _PRIOR_OCTAVES) ** 2)
+    score = (at(lag(coarse)) + 0.5 * at(2 * lag(coarse)) + 0.5 * at(lag(coarse) / 2)) * prior
+    rough = float(coarse[int(np.argmax(score))])
+
+    fine = np.arange(rough * (1 - _REFINE_SPAN), rough * (1 + _REFINE_SPAN), 0.01)
+    comb = np.sum([at(beats * lag(fine)) for beats in range(1, _REFINE_BEATS + 1)], axis=0)
+    return round(float(fine[int(np.argmax(comb))]), 2)
 
 
 def ghost_kick(n_samples: int, onsets: SampleIndices, sr: int) -> Audio:
@@ -167,9 +178,7 @@ def mix_stems(
             if drum_names
             else np.array([], dtype=np.int64)
         )
-        bpm = (
-            estimate_bpm(np.sort(drum_onsets), sr, _TEMPO_PRIOR_BPM[genre]) if len(onsets) else None
-        )
+        bpm = estimate_bpm(np.sort(drum_onsets), sr, _TEMPO_PRIOR_BPM[genre])
 
     ctx = _Context(sr, genre, onsets, bpm)
     results = {name: _process(audio, roles[name], ctx) for name, audio in padded.items()}

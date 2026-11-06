@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from automix._types import Audio, SampleIndices
 
-_FRAME = 256  # ~5 ms at 48 kHz
+_FRAME_SECONDS = 256 / 48_000  # about 5 ms: long enough that a sub cycle never reads as a hit
 _RISE_RATIO = 2.0  # a frame must be 6 dB above the previous one to count as a new hit
 
 
@@ -29,17 +29,18 @@ def detect_onsets(
         return np.array([], dtype=np.int64)
     threshold = loudest * 10 ** (threshold_db / 20)
 
-    n_frames = len(mono) // _FRAME + 1
-    padded = np.pad(mono, (0, n_frames * _FRAME - len(mono)))
-    frame_peaks = padded.reshape(n_frames, _FRAME).max(axis=1)
+    frame = max(int(sr * _FRAME_SECONDS), 1)
+    n_frames = len(mono) // frame + 1
+    padded = np.pad(mono, (0, n_frames * frame - len(mono)))
+    frame_peaks = padded.reshape(n_frames, frame).max(axis=1)
     previous = np.concatenate([[0.0], frame_peaks[:-1]])
     candidates = np.flatnonzero((frame_peaks >= threshold) & (frame_peaks > previous * _RISE_RATIO))
 
     min_gap = int(min_interval_s * sr)
     onsets: list[int] = []
-    for frame in candidates:
-        start = int(frame) * _FRAME
-        sample = start + int(np.argmax(padded[start : start + _FRAME] >= threshold))
+    for index in candidates:
+        start = int(index) * frame
+        sample = start + int(np.argmax(padded[start : start + frame] >= threshold))
         if not onsets or sample - onsets[-1] >= min_gap:
             onsets.append(sample)
     return np.array(onsets, dtype=np.int64)
