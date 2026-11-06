@@ -1,0 +1,529 @@
+[
+ {
+  "path": "drums/Karoryfer/frankensnare",
+  "type": "drums",
+  "source": "Karoryfer",
+  "pack": "frankensnare",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.frankensnare",
+  "commit": "9151c2d79fcbb73c65d63f78918d4ba7abc91a81",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "license"
+  ],
+  "description": "Snare drum collection: many snares, sticks/brushes, multiple mics, velocity layers and round-robins",
+  "audio_files": 3580,
+  "formats": {
+   "FLAC 16-bit/44.1kHz": 3148,
+   "FLAC 24-bit/44.1kHz": 336,
+   "WAV 16-bit/44.1kHz": 96
+  },
+  "sfz_mappings": 309,
+  "size_mb": 444
+ },
+ {
+  "path": "drums/Versilian-Karoryfer/virtuosity-drums",
+  "type": "drums",
+  "source": "Versilian-Karoryfer",
+  "pack": "virtuosity-drums",
+  "source_url": "https://github.com/sfzinstruments/virtuosity_drums",
+  "commit": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Full acoustic drum kit (kick, snare, toms, hats, cymbals), multi-mic, KVR DC'21 entry",
+  "audio_files": 4858,
+  "formats": {
+   "FLAC 24-bit/48kHz": 3438,
+   "FLAC 16-bit/44.1kHz": 1312,
+   "WAV 24-bit/48kHz": 108
+  },
+  "sfz_mappings": 419,
+  "size_mb": 1201
+ },
+ {
+  "path": "drums/Karoryfer/the-hat-with-the-phat",
+  "type": "drums",
+  "source": "Karoryfer",
+  "pack": "the-hat-with-the-phat",
+  "source_url": "https://github.com/sfzinstruments/Karoryfer.TheHatWithThePhat",
+  "commit": "afa76f2c9c88e2e27d72a0c2216b1eae3c47b835",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Giant hi-hat made from two ride cymbals, 24-bit",
+  "audio_files": 712,
+  "formats": {
+   "WAV 24-bit/44.1kHz": 712
+  },
+  "sfz_mappings": 53,
+  "size_mb": 943
+ },
+ {
+  "path": "percussion/sfzinstruments/body-percussion",
+  "type": "percussion",
+  "source": "sfzinstruments",
+  "pack": "body-percussion",
+  "source_url": "https://github.com/sfzinstruments/body_percussion",
+  "commit": "4ac9d8966679c648b62fa10a188179e186b97f24",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Body percussion: claps, snaps, chest/thigh slaps",
+  "audio_files": 202,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 162,
+   "WAV float 32-bit/44.1kHz": 40
+  },
+  "sfz_mappings": 29,
+  "size_mb": 34
+ },
+ {
+  "path": "percussion/kinwie/dim-cabasa",
+  "type": "percussion",
+  "source": "kinwie",
+  "pack": "dim-cabasa",
+  "source_url": "https://github.com/sfzinstruments/kinwie.dim-cabasa",
+  "commit": "016457e51a3e6558ab49676789260b54ff52ff1b",
+  "license": "CC BY 4.0 (attribution required) - credit: Dim Cabasa by kinwie, played by Dimas Syah",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Cabasa, 250 unprocessed 24/48 hits (SM57 > Neve 1073)",
+  "audio_files": 250,
+  "formats": {
+   "FLAC 24-bit/48kHz": 250
+  },
+  "sfz_mappings": 1,
+  "size_mb": 13
+ },
+ {
+  "path": "percussion/jlearman/steel-drum",
+  "type": "percussion",
+  "source": "jlearman",
+  "pack": "steel-drum",
+  "source_url": "https://github.com/sfzinstruments/jlearman.SteelDrum",
+  "commit": "dc15a36ad69a43b0d240fcbd0cc78fbc61b2b47e",
+  "license": "The Unlicense (public domain)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Chromatic C tenor steel drum",
+  "audio_files": 368,
+  "formats": {
+   "FLAC 16-bit/44.1kHz": 368
+  },
+  "sfz_mappings": 2,
+  "size_mb": 43
+ },
+ {
+  "path": "bass/Karoryfer/black-and-blue-basses",
+  "type": "bass",
+  "source": "Karoryfer",
+  "pack": "black-and-blue-basses",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.black-and-blue-basses",
+  "commit": "6e7d674cdb41be7a54dbccb15472401ad01099b9",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "license"
+  ],
+  "description": "Two electric bass guitars, multiple articulations, 24-bit",
+  "audio_files": 2208,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 2040,
+   "WAV 24-bit/44.1kHz": 168
+  },
+  "sfz_mappings": 64,
+  "size_mb": 520
+ },
+ {
+  "path": "bass/Karoryfer/meatbass",
+  "type": "bass",
+  "source": "Karoryfer",
+  "pack": "meatbass",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.meatbass",
+  "commit": "ac9e859564bda286ab5ec672d00ff1aa2fef2895",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "1958 Otto Rubner double bass (fifths tuning), arco, 24-bit",
+  "audio_files": 536,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 434,
+   "WAV 24-bit/44.1kHz": 102
+  },
+  "sfz_mappings": 39,
+  "size_mb": 157
+ },
+ {
+  "path": "bass/Karoryfer/growlybass",
+  "type": "bass",
+  "source": "Karoryfer",
+  "pack": "growlybass",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.growlybass",
+  "commit": "4f483268fc66b5a6d5781d421c0d11b8d08d3fc6",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Aggressive/growly electric bass, 24-bit",
+  "audio_files": 380,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 380
+  },
+  "sfz_mappings": 7,
+  "size_mb": 95
+ },
+ {
+  "path": "bass/DSmolken/double-bass",
+  "type": "bass",
+  "source": "DSmolken",
+  "pack": "double-bass",
+  "source_url": "https://github.com/sfzinstruments/dsmolken.double-bass",
+  "commit": "c2985eb647109d2a8f30a70071e3e163339d7396",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "1958 Otto Rubner double bass, arco and pizzicato plus noises, 32-bit float",
+  "audio_files": 401,
+  "formats": {
+   "WAV float 32-bit/44.1kHz": 401
+  },
+  "sfz_mappings": 3,
+  "size_mb": 278
+ },
+ {
+  "path": "guitar/Karoryfer/black-and-green-guitars",
+  "type": "guitar",
+  "source": "Karoryfer",
+  "pack": "black-and-green-guitars",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.black-and-green-guitars",
+  "commit": "b3b3249d37dc977a1a297bd2dc053e6d9b6b805c",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Two electric guitars (DI-style), multiple articulations, 24-bit. 121 files corrupted upstream were removed (see REMOVED_CORRUPT_FILES.txt)",
+  "audio_files": 1655,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 1651,
+   "WAV 24-bit/44.1kHz": 4
+  },
+  "sfz_mappings": 71,
+  "size_mb": 472
+ },
+ {
+  "path": "guitar/Karoryfer/emilyguitar",
+  "type": "guitar",
+  "source": "Karoryfer",
+  "pack": "emilyguitar",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.emilyguitar",
+  "commit": "b4920dc662fd9cad6dcaccdeecffdd91c8725d8c",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Epiphone Emily the Strange electric guitar, incl. chord and multi-voice mappings, 24-bit",
+  "audio_files": 323,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 323
+  },
+  "sfz_mappings": 6,
+  "size_mb": 53
+ },
+ {
+  "path": "guitar/Karoryfer/shinyguitar",
+  "type": "guitar",
+  "source": "Karoryfer",
+  "pack": "shinyguitar",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.shinyguitar",
+  "commit": "57243cca85277dbcc120ce17c6178032f93c80f3",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Archtop guitar, 24-bit",
+  "audio_files": 846,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 846
+  },
+  "sfz_mappings": 16,
+  "size_mb": 192
+ },
+ {
+  "path": "keys/Alexander-Holm/salamander-grand-piano",
+  "type": "keys",
+  "source": "Alexander-Holm",
+  "pack": "salamander-grand-piano",
+  "source_url": "https://github.com/sfzinstruments/SalamanderGrandPiano",
+  "commit": "3382bf9496bba2486f5ab0de55a264d1dfc38404",
+  "license": "CC BY 3.0 (attribution required) - credit: Salamander Grand Piano by Alexander Holm",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Yamaha C5 grand piano, 16 velocity layers, 24/48, with pedal/hammer/resonance noises",
+  "audio_files": 641,
+  "formats": {
+   "FLAC 24-bit/48kHz": 641
+  },
+  "sfz_mappings": 1,
+  "size_mb": 719
+ },
+ {
+  "path": "keys/Bengt-Nilsson/headroom-piano",
+  "type": "keys",
+  "source": "Bengt-Nilsson",
+  "pack": "headroom-piano",
+  "source_url": "https://github.com/sfzinstruments/BengtNilsson.HeadroomPiano",
+  "commit": "2a7df3f7252227a3484202c1d61bc1bfe352a971",
+  "license": "CC BY 4.0 (attribution required) - credit: Headroom Piano by Bengt Nilsson",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Yamaha C3 grand piano, close + Decca tree mics, 5 velocity layers",
+  "audio_files": 300,
+  "formats": {
+   "FLAC 16-bit/44.1kHz": 300
+  },
+  "sfz_mappings": 4,
+  "size_mb": 151
+ },
+ {
+  "path": "keys/Versilian-Karoryfer/osiris-piano",
+  "type": "keys",
+  "source": "Versilian-Karoryfer",
+  "pack": "osiris-piano",
+  "source_url": "https://github.com/sfzinstruments/Osiris_Piano",
+  "commit": "18c6afccb60cff458edbf7c394571783e074e1e9",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Acoustic piano by Versilian Studios and Karoryfer, sustain and noise variants",
+  "audio_files": 1242,
+  "formats": {
+   "FLAC 16-bit/48kHz": 1242
+  },
+  "sfz_mappings": 74,
+  "size_mb": 477
+ },
+ {
+  "path": "strings/Karoryfer-Bigcat/cello",
+  "type": "strings",
+  "source": "Karoryfer-Bigcat",
+  "pack": "cello",
+  "source_url": "https://github.com/sfzinstruments/karoryfer-bigcat.cello",
+  "commit": "6fd75fbfc1dbb3109bf26220ba1adea46188a18b",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Solo cello, 24-bit",
+  "audio_files": 479,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 343,
+   "WAV 24-bit/44.1kHz": 136
+  },
+  "sfz_mappings": 39,
+  "size_mb": 119
+ },
+ {
+  "path": "winds-brass/Karoryfer/bear-sax",
+  "type": "winds-brass",
+  "source": "Karoryfer",
+  "pack": "bear-sax",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.bear-sax",
+  "commit": "7abb3c652525a15dfac80e1b5dfbba9964ee568f",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "1926 Conn baritone saxophone",
+  "audio_files": 755,
+  "formats": {
+   "WAV float 32-bit/44.1kHz": 438,
+   "FLAC 16-bit/44.1kHz": 256,
+   "WAV 24-bit/44.1kHz": 61
+  },
+  "sfz_mappings": 48,
+  "size_mb": 138
+ },
+ {
+  "path": "winds-brass/Karoryfer/war-tuba",
+  "type": "winds-brass",
+  "source": "Karoryfer",
+  "pack": "war-tuba",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.war-tuba",
+  "commit": "5b62dd6ef6b00281bb734769e44a63f5e013018a",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Tuba, many articulations",
+  "audio_files": 1443,
+  "formats": {
+   "FLAC 16-bit/44.1kHz": 1356,
+   "WAV 16-bit/44.1kHz": 87
+  },
+  "sfz_mappings": 77,
+  "size_mb": 83
+ },
+ {
+  "path": "winds-brass/MTG-UPF/solo-sax",
+  "type": "winds-brass",
+  "source": "MTG-UPF",
+  "pack": "solo-sax",
+  "source_url": "https://github.com/sfzinstruments/MTG.SoloSax",
+  "commit": "b494d256549b3d088fdec176ce82867f8a1f58b2",
+  "license": "CC BY 4.0 (attribution required) - credit: MTG (Music Technology Group, Universitat Pompeu Fabra); SFZ by kinwie",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Soprano, alto, tenor and baritone saxophones, 24/48",
+  "audio_files": 737,
+  "formats": {
+   "FLAC 24-bit/48kHz": 737
+  },
+  "sfz_mappings": 8,
+  "size_mb": 111
+ },
+ {
+  "path": "world/sfzinstruments/erhu",
+  "type": "world",
+  "source": "sfzinstruments",
+  "pack": "erhu",
+  "source_url": "https://github.com/sfzinstruments/aliexpress-erhu",
+  "commit": "6615047b2fd06126877483e97b8bb4af9d00b080",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Chinese erhu (bowed), 24-bit",
+  "audio_files": 170,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 170
+  },
+  "sfz_mappings": 19,
+  "size_mb": 48
+ },
+ {
+  "path": "world/sfzinstruments/cithara-barbarica",
+  "type": "world",
+  "source": "sfzinstruments",
+  "pack": "cithara-barbarica",
+  "source_url": "https://github.com/sfzinstruments/cithara-barbarica",
+  "commit": "a47c10dc4a26538a8a56d31d3436488138292ca2",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "10-string medieval lyre, 24-bit",
+  "audio_files": 200,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 200
+  },
+  "sfz_mappings": 73,
+  "size_mb": 86
+ },
+ {
+  "path": "world/sfzinstruments/hungarian-zither",
+  "type": "world",
+  "source": "sfzinstruments",
+  "pack": "hungarian-zither",
+  "source_url": "https://github.com/sfzinstruments/hungarian_zither",
+  "commit": "973d9445ba890661a4f4cd8e417d36134fb5f337",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Hungarian zither (citera), 24-bit",
+  "audio_files": 210,
+  "formats": {
+   "FLAC 24-bit/44.1kHz": 210
+  },
+  "sfz_mappings": 7,
+  "size_mb": 172
+ },
+ {
+  "path": "world/sfzinstruments/ganjo",
+  "type": "world",
+  "source": "sfzinstruments",
+  "pack": "ganjo",
+  "source_url": "https://github.com/sfzinstruments/ganjo",
+  "commit": "ccff5cd5cd3b513873a48994c07724d9d3c39e1c",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE.md"
+  ],
+  "description": "Guitar-banjo, 32-bit float",
+  "audio_files": 61,
+  "formats": {
+   "WAV float 32-bit/44.1kHz": 61
+  },
+  "sfz_mappings": 1,
+  "size_mb": 25
+ },
+ {
+  "path": "synth/Karoryfer/caveman-cosmonaut",
+  "type": "synth",
+  "source": "Karoryfer",
+  "pack": "caveman-cosmonaut",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.caveman-cosmonaut",
+  "commit": "9de9bcfcbc6d2b20bea5c1116cd07a310febc339",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Unitra B-11 transistor organ turned into a virtual analog synth",
+  "audio_files": 370,
+  "formats": {
+   "WAV 16-bit/44.1kHz": 370
+  },
+  "sfz_mappings": 29,
+  "size_mb": 107
+ },
+ {
+  "path": "synth/Karoryfer/cowsynth",
+  "type": "synth",
+  "source": "Karoryfer",
+  "pack": "cowsynth",
+  "source_url": "https://github.com/sfzinstruments/karoryfer.cowsynth",
+  "commit": "5a5b5afc2dabbe54cf9d75ab64711ce01862b42c",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Medieval bagpipe replica used as synth oscillators (organ, pad, pluck mappings)",
+  "audio_files": 40,
+  "formats": {
+   "WAV 16-bit/44.1kHz": 40
+  },
+  "sfz_mappings": 17,
+  "size_mb": 14
+ },
+ {
+  "path": "orchestral/Versilian-Studios/vsco-2-ce",
+  "type": "orchestral",
+  "source": "Versilian-Studios",
+  "pack": "vsco-2-ce",
+  "source_url": "https://github.com/sgossner/VSCO-2-CE",
+  "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+  "license": "CC0 1.0 (public domain dedication)",
+  "license_file": [
+   "LICENSE"
+  ],
+  "description": "Versilian Studios Chamber Orchestra 2 CE: strings, woodwinds, brass, percussion, keys",
+  "audio_files": 3168,
+  "formats": {
+   "FLAC 16-bit/44.1kHz": 1761,
+   "FLAC 24-bit/44.1kHz": 1401,
+   "WAV 16-bit/44.1kHz": 6
+  },
+  "sfz_mappings": 0,
+  "size_mb": 1151
+ }
+]

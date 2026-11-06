@@ -54,6 +54,13 @@ gentle defaults. Fader levels are measured while a stem is playing, so a part th
 comes in now and then is not turned up to make up for its silence. Logic's
 `Smart Tempo Multitrack Set` downmix, if it is in the stems folder, is skipped.
 
+## Sample library
+
+[`samples/MANIFEST.md`](samples/MANIFEST.md) lists the free-licence sample packs collected for
+this project (27 packs, lossless only), with each pack's licence, formats and pinned source
+commit; `samples/manifest.json` is the machine-readable copy. The audio itself is not in git.
+Four packs are CC BY and need a credit when used; the manifest names them.
+
 ## Development
 
 Requires [uv](https://docs.astral.sh/uv/).
