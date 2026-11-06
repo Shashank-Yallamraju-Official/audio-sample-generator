@@ -2,6 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
+from automix.buses import Bus
 from automix.eq import Role
 from automix.gain import peak_dbfs, rms_dbfs
 from automix.pipeline import estimate_bpm, ghost_kick, mix_stems
@@ -181,3 +182,21 @@ def test_every_stem_reports_its_fader_level() -> None:
 
 def test_estimate_bpm_gives_up_on_simultaneous_onsets() -> None:
     assert estimate_bpm(np.array([1000, 1000], dtype=np.int64), SR) is None
+
+
+def test_mix_sums_stems_into_buses_and_returns() -> None:
+    result = mix_stems(stems(), SR, Genre.DANCE)
+    assert {Bus.DRUMS, Bus.BASS, Bus.MUSIC, Bus.VOCALS, Bus.FX} <= set(result.buses)
+    assert {"Reverb Return.wav", "Delay Return.wav"} <= set(result.returns)
+    assert all(b.shape == result.rough_mix.shape for b in result.buses.values())
+
+
+def test_drum_and_mix_buses_are_glued() -> None:
+    result = mix_stems(stems(), SR, Genre.DANCE)
+    assert result.bus_comp[Bus.DRUMS].stages
+    assert result.mix_comp.stages
+
+
+def test_rough_mix_stays_mostly_mono_compatible() -> None:
+    result = mix_stems(stems(), SR, Genre.POP)
+    assert result.correlation > 0.5

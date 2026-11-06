@@ -52,11 +52,22 @@ class DuckRule:
 
 
 @dataclass(frozen=True)
+class BusSettings:
+    """Drum-bus and mix-bus processing for a genre."""
+
+    drum_glue: CompSettings
+    parallel_blend: float  # 0 turns parallel drum compression off
+    mix_glue: CompSettings
+    low_mono_hz: float
+
+
+@dataclass(frozen=True)
 class Preset:
     """Genre-specific overrides."""
 
     ducking: dict[Role, DuckRule]
     master_lufs: float
+    buses: BusSettings
     comp_overrides: dict[Role, CompSettings] = field(default_factory=dict)
 
 
@@ -70,6 +81,12 @@ PRESETS: dict[Genre, Preset] = {
             Role.RETURN: DuckRule(4.5, release_beats=EIGHTH),
         },
         master_lufs=-7.0,
+        buses=BusSettings(
+            drum_glue=CompSettings(ratio=4.0, attack_ms=10.0, release_ms=100.0, target_gr_db=3.0),
+            parallel_blend=0.3,
+            mix_glue=CompSettings(ratio=2.0, attack_ms=30.0, release_ms=200.0, target_gr_db=2.0),
+            low_mono_hz=120.0,
+        ),
     ),
     Genre.HIPHOP: Preset(
         ducking={
@@ -79,6 +96,13 @@ PRESETS: dict[Genre, Preset] = {
             Role.RETURN: DuckRule(3.0, release_beats=EIGHTH),
         },
         master_lufs=-8.0,
+        buses=BusSettings(
+            drum_glue=CompSettings(ratio=4.0, attack_ms=30.0, release_ms=100.0, target_gr_db=3.0),
+            parallel_blend=0.3,
+            mix_glue=CompSettings(ratio=2.0, attack_ms=30.0, release_ms=200.0, target_gr_db=1.5),
+            # The 808 owns the sub; keep only that mono so wide synths keep their low mids.
+            low_mono_hz=100.0,
+        ),
         comp_overrides={
             Role.VOCAL: CompSettings(ratio=4.0, attack_ms=5.0, release_ms=75.0, target_gr_db=8.0),
         },
@@ -90,6 +114,12 @@ PRESETS: dict[Genre, Preset] = {
             Role.RETURN: DuckRule(3.0, release_beats=EIGHTH),
         },
         master_lufs=-9.0,
+        buses=BusSettings(
+            drum_glue=CompSettings(ratio=2.0, attack_ms=30.0, release_ms=100.0, target_gr_db=2.0),
+            parallel_blend=0.0,
+            mix_glue=CompSettings(ratio=1.5, attack_ms=30.0, release_ms=200.0, target_gr_db=1.5),
+            low_mono_hz=120.0,
+        ),
     ),
 }
 

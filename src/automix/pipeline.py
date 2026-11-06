@@ -11,11 +11,19 @@ import numpy.typing as npt
 from scipy import ndimage, signal
 
 from automix._types import Audio, SampleIndices
+from automix.buses import (
+    BUS_BY_ROLE,
+    Bus,
+    make_returns,
+    mono_low_end,
+    parallel_compress,
+    stereo_correlation,
+)
 from automix.compression import CompResult, CompSettings, compress
 from automix.eq import HIGHPASS_HZ, Resonance, Role, apply_cuts, find_resonances, highpass
 from automix.eq import role_from_filename as _role
 from automix.gain import gain_stage, peak_dbfs, rms_dbfs
-from automix.presets import Genre, comp_settings, duck_settings
+from automix.presets import PRESETS, Genre, comp_settings, duck_settings
 from automix.sidechain import DuckSettings, apply_ducking, detect_onsets, duck_curve
 
 MIX_BUS_PEAK_DBFS = -6.0
@@ -75,6 +83,11 @@ class MixResult:
     bpm: float | None
     ghost_kick: Audio | None
     rough_mix: Audio
+    buses: dict[Bus, Audio]
+    bus_comp: dict[Bus, CompResult]
+    returns: dict[str, Audio]
+    mix_comp: CompResult
+    correlation: float
 
 
 _ONSET_FPS = 100  # onset-train frame rate for tempo analysis
@@ -155,7 +168,14 @@ def mix_stems(
 
     ctx = _Context(sr, genre, onsets, bpm)
     results = {name: _process(audio, roles[name], ctx) for name, audio in padded.items()}
-    mix = np.sum([r.audio for r in results.values()], axis=0).astype(np.float32)
+
+    returns = _returns(results, ctx)
+    buses, bus_comp = _buses(results, returns, ctx)
+    settings = PRESETS[genre].buses
+    mix_comp = compress(
+        np.sum(list(buses.values()), axis=0).astype(np.float32), sr, settings.mix_glue
+    )
+    mix = mono_low_end(mix_comp.audio, sr, settings.low_mono_hz)
     peak = peak_dbfs(mix)
     if np.isfinite(peak):
         mix = (mix * np.float32(10 ** ((MIX_BUS_PEAK_DBFS - peak) / 20))).astype(np.float32)
@@ -165,7 +185,52 @@ def mix_stems(
         bpm=bpm,
         ghost_kick=ghost_kick(length, onsets, sr) if len(onsets) else None,
         rough_mix=mix,
+        buses=buses,
+        bus_comp=bus_comp,
+        returns=returns,
+        mix_comp=mix_comp,
+        correlation=stereo_correlation(mix),
     )
+
+
+def _returns(results: dict[str, StemResult], ctx: _Context) -> dict[str, Audio]:
+    """Render reverb/delay returns from the processed stems, ducked like any return."""
+    sources: dict[Role, list[Audio]] = {}
+    for stem in results.values():
+        sources.setdefault(stem.role, []).append(stem.audio)
+    returns = make_returns(sources, ctx.sr, ctx.bpm)
+    duck = (
+        duck_settings(ctx.genre, Role.RETURN, ctx.bpm)
+        if ctx.bpm is not None and len(ctx.onsets)
+        else None
+    )
+    if duck is None:
+        return returns
+    return {
+        name: apply_ducking(audio, duck_curve(audio.shape[1], ctx.onsets, ctx.sr, duck))
+        for name, audio in returns.items()
+    }
+
+
+def _buses(
+    results: dict[str, StemResult], returns: dict[str, Audio], ctx: _Context
+) -> tuple[dict[Bus, Audio], dict[Bus, CompResult]]:
+    """Sum stems into buses; glue and parallel-compress the drum bus."""
+    groups: dict[Bus, list[Audio]] = {}
+    for stem in results.values():
+        groups.setdefault(BUS_BY_ROLE[stem.role], []).append(stem.audio)
+    groups.setdefault(Bus.FX, []).extend(returns.values())
+    buses = {
+        bus: np.sum(parts, axis=0).astype(np.float32) for bus, parts in groups.items() if parts
+    }
+
+    comps: dict[Bus, CompResult] = {}
+    if Bus.DRUMS in buses:
+        settings = PRESETS[ctx.genre].buses
+        glued = compress(buses[Bus.DRUMS], ctx.sr, settings.drum_glue)
+        comps[Bus.DRUMS] = glued
+        buses[Bus.DRUMS] = parallel_compress(glued.audio, ctx.sr, settings.parallel_blend)
+    return buses, comps
 
 
 def _process(audio: Audio, role: Role, ctx: _Context) -> StemResult:

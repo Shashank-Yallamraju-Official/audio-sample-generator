@@ -38,3 +38,28 @@ def test_markdown_report_lists_unprocessed_stages_as_none() -> None:
     assert "- Channel EQ: none" not in text.split("## Reverb Return.wav")[1]
     assert "- Compressor: none" in text
     assert "Tempo: not detected" in text
+
+
+def test_markdown_report_describes_buses_in_logic_terms() -> None:
+    text = to_markdown(mix_stems(stems(), SR, Genre.HIPHOP), Genre.HIPHOP)
+    buses = text.split("## Buses")[1]
+    assert "Track Stack" in buses
+    assert "Drums" in buses
+    assert "Parallel" in buses
+    assert "Channel EQ in Side mode: High Pass 100 Hz" in buses
+    assert "Reverb Return.wav" in buses
+    assert "Stereo correlation" in buses
+
+
+def test_json_report_lists_buses_and_returns() -> None:
+    data = json.loads(to_json(mix_stems(stems(), SR, Genre.DANCE), Genre.DANCE))
+    assert "Drums" in data["buses"]
+    assert data["buses"]["Drums"]["parallel_blend"] > 0
+    assert "Reverb Return.wav" in data["returns"]
+    assert -1.0 <= data["mix"]["correlation"] <= 1.0
+
+
+def test_markdown_report_notes_a_silent_drum_bus() -> None:
+    silent = {"Kick.wav": np.zeros((2, SR), dtype=np.float32), "Pad.wav": stems()["Pad.wav"]}
+    text = to_markdown(mix_stems(silent, SR, Genre.POP), Genre.POP)
+    assert "Drums bus: Compressor bypassed" in text
